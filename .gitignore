@@ -1,10 +1,8 @@
 # Ignored files de cliente
 client/node_modules/
-client/.gitignore
 
 # Ignored files de servidor
 server/node_modules/
-server/.gitignore
 server/.env
 
 # Logs

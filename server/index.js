@@ -1,8 +1,10 @@
 import express from 'express';
+import cors from 'cors';
 import tasksRouter from './api/tasks.js';
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 // Montar el router de tareas en /tasks
