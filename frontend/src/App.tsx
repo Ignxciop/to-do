@@ -5,18 +5,16 @@ function App() {
 
     return (
         <>
-            <h1>Vite + React</h1>
+            <h1>Frontend activo en puerto 4003</h1>
+            <p>
+                Para probar el backend, haz una petición a{" "}
+                <code>/api/ping</code> y deberías recibir "pong".
+            </p>
             <div className="card">
                 <button onClick={() => setCount((count) => count + 1)}>
                     count is {count}
                 </button>
-                <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
             </div>
-            <p className="read-the-docs">
-                Click on the Vite and React logos to learn more
-            </p>
         </>
     );
 }

@@ -8,6 +8,10 @@ app.get("/", (req, res) => {
     res.send("Servidor iniciado");
 });
 
+app.get("/ping", (req, res) => {
+    res.send("pong");
+});
+
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
