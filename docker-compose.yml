@@ -1,48 +1,48 @@
 version: "3.8"
 
 services:
-	backend:
-		build:
-			context: ./backend
-			dockerfile: Dockerfile
-		restart: unless-stopped
-		ports:
-			- "4004:4004"
-		environment:
-			NODE_ENV: production
-			PORT: 4004
-		networks:
-			- to-do-network
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        ports:
+            - "4004:4004"
+        environment:
+            NODE_ENV: production
+            PORT: 4004
+        networks:
+            - to-do-network
 
-	frontend:
-		build:
-			context: ./frontend
-			dockerfile: Dockerfile
-		restart: unless-stopped
-		ports:
-			- "4003:4003"
-		environment:
-			API_URL: http://localhost:4004
-		depends_on:
-			- backend
-		networks:
-			- to-do-network
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        ports:
+            - "4003:4003"
+        environment:
+            API_URL: http://localhost:4004
+        depends_on:
+            - backend
+        networks:
+            - to-do-network
 
-	cloudflared:
-		image: cloudflare/cloudflared:latest
-		restart: unless-stopped
-		environment:
-			TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
-		networks:
-			- to-do-network
-		command:
-			- tunnel
-			- --no-autoupdate
-			- run
-		depends_on:
-			- frontend
-			- backend
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        restart: unless-stopped
+        environment:
+            TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+        networks:
+            - to-do-network
+        command:
+            - tunnel
+            - --no-autoupdate
+            - run
+        depends_on:
+            - frontend
+            - backend
 
 networks:
-	to-do-network:
-		driver: bridge
+    to-do-network:
+        driver: bridge
