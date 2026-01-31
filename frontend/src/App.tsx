@@ -1,34 +1,45 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Navigate,
+    useLocation,
+} from "react-router-dom";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Dashboard from "./pages/Dashboard";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
+function CatchAllRoute() {
+    const { user } = useAuth();
+    const location = useLocation();
+    if (user) {
+        return <Navigate to="/" replace state={{ from: location }} />;
+    } else {
+        return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+}
 
 function App() {
-    const [count, setCount] = useState(0);
-    const [ping, setPing] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetch("/api/ping")
-            .then((res) => res.text())
-            .then((data) => setPing(data))
-            .catch(() => setPing("Error al conectar con backend"));
-    }, []);
-
     return (
-        <>
-            <h1>Frontend activo en puerto 4003</h1>
-            <p>
-                Para probar el backend, haz una petición a{" "}
-                <code>/api/ping</code> y deberías recibir "pong".
-            </p>
-            <p>
-                <strong>Respuesta del backend:</strong>{" "}
-                {ping === null ? "Cargando..." : ping}
-            </p>
-            <div className="card">
-                <button onClick={() => setCount((count) => count + 1)}>
-                    count is {count}
-                </button>
-            </div>
-        </>
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route
+                        path="/auth/login"
+                        element={<Navigate to="/login" replace />}
+                    />
+                    <Route path="/auth/register" element={<Register />} />
+                    <Route
+                        path="/register"
+                        element={<Navigate to="/auth/register" replace />}
+                    />
+                    <Route path="*" element={<CatchAllRoute />} />
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
     );
 }
 
