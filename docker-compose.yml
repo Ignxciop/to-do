@@ -11,6 +11,10 @@ services:
         environment:
             NODE_ENV: production
             PORT: 4004
+            DATABASE_URL: ${DATABASE_URL}
+            JWT_SECRET: ${JWT_SECRET}
+            JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+            FRONTEND_URL: ${FRONTEND_URL}
         networks:
             - to-do-network
             - default
