@@ -13,6 +13,7 @@ services:
             PORT: 4004
         networks:
             - to-do-network
+            - default
 
     frontend:
         build:
@@ -46,3 +47,6 @@ services:
 networks:
     to-do-network:
         driver: bridge
+    default:
+        name: dokploy-network
+        external: true
