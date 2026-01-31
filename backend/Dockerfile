@@ -1,9 +1,22 @@
 FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && \
+	adduser -S nodejs -u 1001
+
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm exec prisma generate
-RUN pnpm exec prisma migrate deploy || true
+RUN pnpm install --frozen-lockfile
+
+COPY prisma ./prisma/
+RUN pnpm prisma generate
+
+COPY --chown=nodejs:nodejs . .
+
+USER nodejs
+
 EXPOSE 4004
-CMD ["pnpm", "start"]
+
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
