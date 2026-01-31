@@ -1,8 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 
-export const register = async (data) => {
+export async function register(data) {
     const { name, lastname, email, password } = data;
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw new Error("El email ya está registrado");
@@ -17,40 +16,25 @@ export const register = async (data) => {
         email: user.email,
         createdAt: user.createdAt,
     };
-};
+}
 
-export const login = async (data) => {
-    const { email, password } = data;
+export async function login({ email, password }) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new Error("Credenciales inválidas");
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new Error("Credenciales inválidas");
-    const token = jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET || "secret",
-        { expiresIn: "1d" },
-    );
-    return token;
-};
+    return user;
+}
 
-export const me = async (req) => {
-    const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith("Bearer ")) throw new Error("No autenticado");
-    const token = auth.split(" ")[1];
-    try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET || "secret");
-        const user = await prisma.user.findUnique({
-            where: { id: payload.id },
-        });
-        if (!user) throw new Error("No autenticado");
-        return {
-            id: user.id,
-            name: user.name,
-            lastname: user.lastname,
-            email: user.email,
-            createdAt: user.createdAt,
-        };
-    } catch {
-        throw new Error("Token inválido");
-    }
-};
+export async function getUserById(id) {
+    return prisma.user.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            name: true,
+            lastname: true,
+            email: true,
+            createdAt: true,
+        },
+    });
+}

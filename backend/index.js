@@ -1,14 +1,15 @@
 import express from "express";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import cors from "cors";
 import { config } from "./src/config/config.js";
 import authRoutes from "./src/routes/auth.js";
-import { errorHandle } from "./src/middlewares/errorHandle.js";
-import cors from "cors";
-import helmet from "helmet";
 
 const app = express();
 const PORT = config.port || 3000;
 
 app.use(helmet());
+app.use(cookieParser());
 
 app.use(
     cors({
