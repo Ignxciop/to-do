@@ -19,4 +19,4 @@ USER nodejs
 
 EXPOSE 4004
 
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
+CMD ["sh", "-c", "pnpm prisma db push --accept-data-loss --skip-generate && pnpm start"]
