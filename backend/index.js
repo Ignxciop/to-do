@@ -4,6 +4,8 @@ import helmet from "helmet";
 import cors from "cors";
 import { config } from "./src/config/config.js";
 import authRoutes from "./src/routes/auth.js";
+import taskRoutes from "./src/routes/task.js";
+import folderRoutes from "./src/routes/folder.js";
 
 const app = express();
 const PORT = config.port || 3000;
@@ -33,6 +35,8 @@ router.get("/ping", (req, res) => {
 
 app.use("/api", router);
 app.use("/api", authRoutes);
+app.use("/api", taskRoutes);
+app.use("/api", folderRoutes);
 
 if (process.env.NODE_ENV !== "test") {
     app.listen(PORT, () => {
