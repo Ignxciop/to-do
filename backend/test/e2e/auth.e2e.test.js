@@ -17,19 +17,23 @@ describe("Auth endpoints", () => {
         await prisma.$disconnect();
     });
 
-    it("/api/register crea un usuario", async () => {
-        const res = await request(app).post("/api/register").send(testUser);
+    it("/api/auth/register crea un usuario", async () => {
+        const res = await request(app)
+            .post("/api/auth/register")
+            .send(testUser);
         expect(res.statusCode).toBe(201);
-        expect(res.body.email).toBe(testUser.email);
+        expect(res.body.user).toBeDefined();
+        expect(res.body.user.email).toBe(testUser.email);
+        expect(res.body.accessToken).toBeDefined();
     });
 
-    it("/api/login loguea un usuario", async () => {
+    it("/api/auth/login loguea un usuario", async () => {
         // Asegurarse de que el usuario existe
-        await request(app).post("/api/register").send(testUser);
+        await request(app).post("/api/auth/register").send(testUser);
         const res = await request(app)
-            .post("/api/login")
+            .post("/api/auth/login")
             .send({ email: testUser.email, password: testUser.password });
         expect(res.statusCode).toBe(200);
-        expect(res.body.token).toBeDefined();
+        expect(res.body.accessToken).toBeDefined();
     });
 });

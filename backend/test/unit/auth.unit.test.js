@@ -42,17 +42,18 @@ describe("authService unit", () => {
     });
 
     describe("login", () => {
-        it("retorna token si credenciales son válidas", async () => {
+        it("retorna usuario si credenciales son válidas", async () => {
             prisma.user.findUnique.mockResolvedValue({
                 id: 1,
                 email: "test@jest.com",
                 password: await bcrypt.hash("123456", 10),
             });
-            const token = await authService.login({
+            const user = await authService.login({
                 email: "test@jest.com",
                 password: "123456",
             });
-            expect(typeof token).toBe("string");
+            expect(user).toBeDefined();
+            expect(user.email).toBe("test@jest.com");
         });
         it("lanza error si usuario no existe", async () => {
             prisma.user.findUnique.mockResolvedValue(null);
@@ -75,8 +76,8 @@ describe("authService unit", () => {
         });
     });
 
-    describe("me", () => {
-        it("retorna usuario si token es válido", async () => {
+    describe("getUserById", () => {
+        it("retorna usuario si existe", async () => {
             const fakeUser = {
                 id: 1,
                 name: "Test",
@@ -85,19 +86,14 @@ describe("authService unit", () => {
                 createdAt: new Date(),
             };
             prisma.user.findUnique.mockResolvedValue(fakeUser);
-            const token = jwt.sign(
-                { id: 1, email: "test@jest.com" },
-                "testsecret",
-            );
-            const req = { headers: { authorization: `Bearer ${token}` } };
-            process.env.JWT_SECRET = "testsecret";
-            const user = await authService.me(req);
+            const user = await authService.getUserById(1);
+            expect(user).toBeDefined();
             expect(user.email).toBe(fakeUser.email);
         });
-        it("lanza error si token es inválido", async () => {
-            const req = { headers: { authorization: "Bearer invalidtoken" } };
-            process.env.JWT_SECRET = "testsecret";
-            await expect(authService.me(req)).rejects.toThrow("Token inválido");
+        it("retorna null si usuario no existe", async () => {
+            prisma.user.findUnique.mockResolvedValue(null);
+            const user = await authService.getUserById(999);
+            expect(user).toBeNull();
         });
     });
 });
