@@ -46,7 +46,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent className="px-6 mt-4">
+            <SidebarContent className="px-6 mt-10">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
