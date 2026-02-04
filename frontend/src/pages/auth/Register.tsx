@@ -16,8 +16,12 @@ export default function Register() {
         email: "",
         password: "",
     });
+    const [verificationCode, setVerificationCode] = useState("");
     const [error, setError] = useState("");
-    const { register, loading } = useAuth();
+    const [success, setSuccess] = useState("");
+    const [showVerification, setShowVerification] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState("");
+    const { register, verifyEmail, resendVerification, loading } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,13 +31,107 @@ export default function Register() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setSuccess("");
         try {
             await register(form);
-            navigate("/");
+            setRegisteredEmail(form.email);
+            setShowVerification(true);
+            setSuccess(
+                "Cuenta creada exitosamente. Revisa tu correo para obtener el código de verificación.",
+            );
         } catch (err: any) {
             setError(err.message || "Error al registrarse");
         }
     };
+
+    const handleVerification = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
+        try {
+            await verifyEmail(registeredEmail, verificationCode);
+            setSuccess("¡Email verificado exitosamente!");
+            setTimeout(() => navigate("/"), 1500);
+        } catch (err: any) {
+            setError(err.message || "Error al verificar código");
+        }
+    };
+
+    const handleResend = async () => {
+        setError("");
+        setSuccess("");
+        try {
+            await resendVerification(registeredEmail);
+            setSuccess("Código de verificación reenviado exitosamente.");
+        } catch (err: any) {
+            setError(err.message || "Error al reenviar código");
+        }
+    };
+
+    if (showVerification) {
+        return (
+            <AuthLayout>
+                <Card className="p-6">
+                    <h2 className="text-2xl font-bold mb-6 text-center">
+                        Verifica tu Email
+                    </h2>
+                    <p className="mb-4 text-center text-sm text-gray-600">
+                        Hemos enviado un código de verificación a{" "}
+                        <strong>{registeredEmail}</strong>
+                    </p>
+                    <form onSubmit={handleVerification} className="space-y-4">
+                        <div>
+                            <Label htmlFor="code">Código de Verificación</Label>
+                            <Input
+                                id="code"
+                                name="code"
+                                type="text"
+                                value={verificationCode}
+                                onChange={(e) =>
+                                    setVerificationCode(e.target.value)
+                                }
+                                placeholder="123456"
+                                maxLength={6}
+                                required
+                                className="mt-1 text-center text-2xl tracking-widest"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                                El código expira en 5 minutos
+                            </p>
+                        </div>
+                        {error && <Alert variant="destructive">{error}</Alert>}
+                        {success && <Alert>{success}</Alert>}
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={loading}
+                        >
+                            {loading ? "Verificando..." : "Verificar Email"}
+                        </Button>
+                    </form>
+                    <div className="mt-4 text-center">
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            className="text-sm text-blue-600 hover:underline"
+                            disabled={loading}
+                        >
+                            ¿No recibiste el código? Reenviar
+                        </button>
+                    </div>
+                    <div className="mt-2 text-center">
+                        <button
+                            type="button"
+                            onClick={() => setShowVerification(false)}
+                            className="text-sm text-gray-600 hover:underline"
+                        >
+                            Volver al registro
+                        </button>
+                    </div>
+                </Card>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout>

@@ -5,14 +5,15 @@ import nodemailer from "nodemailer";
  * En producción, debes configurar variables de entorno con tu servicio SMTP
  */
 function createTransporter() {
-    // Para desarrollo: usa Ethereal Email (servicio de prueba)
-    // Para producción: configura tu servicio SMTP real
-
-    if (process.env.NODE_ENV === "production") {
-        // Configuración de producción con tu servicio SMTP real
+    // Si hay credenciales SMTP configuradas, usarlas
+    if (
+        process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASS
+    ) {
         return nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
+            port: parseInt(process.env.SMTP_PORT) || 465,
             secure: true,
             auth: {
                 user: process.env.SMTP_USER,
@@ -20,7 +21,7 @@ function createTransporter() {
             },
         });
     } else {
-        // Para desarrollo y testing: transporte de prueba
+        // Para desarrollo sin credenciales: transporte de prueba
         return nodemailer.createTransport({
             host: "smtp.ethereal.email",
             port: 587,
@@ -56,9 +57,9 @@ export async function sendVerificationEmail(email, name, code) {
     const transporter = createTransporter();
 
     const mailOptions = {
-        from: '"To-Do App" <noreply@todoapp.com>',
+        from: '"Enfok" <noreply@enfok.com>',
         to: email,
-        subject: "Verifica tu cuenta - To-Do App",
+        subject: "Verifica tu cuenta - Enfok",
         html: `
             <!DOCTYPE html>
             <html>
@@ -113,7 +114,7 @@ export async function sendVerificationEmail(email, name, code) {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>¡Bienvenido a To-Do App, ${name}!</h1>
+                        <h1>¡Bienvenido a Enfok, ${name}!</h1>
                         <p>Gracias por registrarte. Estás a un paso de comenzar.</p>
                     </div>
                     
@@ -129,14 +130,14 @@ export async function sendVerificationEmail(email, name, code) {
                     
                     <div class="footer">
                         <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
-                        <p>&copy; ${new Date().getFullYear()} To-Do App. Todos los derechos reservados.</p>
+                        <p>&copy; ${new Date().getFullYear()} Enfok. Todos los derechos reservados.</p>
                     </div>
                 </div>
             </body>
             </html>
         `,
         text: `
-            ¡Bienvenido a To-Do App, ${name}!
+            ¡Bienvenido a Enfok, ${name}!
             
             Para activar tu cuenta, usa el siguiente código de verificación:
             
@@ -146,7 +147,7 @@ export async function sendVerificationEmail(email, name, code) {
             
             Si no solicitaste esta cuenta, puedes ignorar este correo.
             
-            © ${new Date().getFullYear()} To-Do App
+            © ${new Date().getFullYear()} Enfok
         `,
     };
 

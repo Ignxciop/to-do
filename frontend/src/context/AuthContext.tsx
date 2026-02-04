@@ -21,6 +21,8 @@ interface AuthContextProps {
         email: string;
         password: string;
     }) => Promise<void>;
+    verifyEmail: (email: string, code: string) => Promise<void>;
+    resendVerification: (email: string) => Promise<void>;
     logout: () => Promise<void>;
     refresh: () => Promise<void>;
 }
@@ -75,9 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const result = await res.json();
             if (!res.ok)
                 throw new Error(result.error || "Error al registrarse");
-            setUser(result.user);
-            setAccessToken(result.accessToken);
-            localStorage.setItem("accessToken", result.accessToken);
+            // NO establecer usuario ni token aquí - esperar verificación
+            // El usuario debe verificar su email primero
         } finally {
             setLoading(false);
         }
@@ -126,6 +127,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    async function verifyEmail(email: string, code: string) {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/auth/verify-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ email, code }),
+            });
+            const data = await res.json();
+            if (!res.ok)
+                throw new Error(data.error || "Error al verificar email");
+            setUser(data.user);
+            setAccessToken(data.accessToken);
+            localStorage.setItem("accessToken", data.accessToken);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function resendVerification(email: string) {
+        const res = await fetch("/api/auth/resend-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok)
+            throw new Error(
+                data.error || "Error al reenviar código de verificación",
+            );
+        return data;
+    }
+
     return (
         <AuthContext.Provider
             value={{
@@ -137,6 +172,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setAccessToken,
                 login,
                 register,
+                verifyEmail,
+                resendVerification,
                 logout,
                 refresh,
             }}
