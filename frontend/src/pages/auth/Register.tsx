@@ -25,8 +25,6 @@ export default function Register() {
     const { register, verifyEmail, resendVerification, loading } = useAuth();
     const navigate = useNavigate();
 
-    console.log("Register render - showVerification:", showVerification);
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -49,21 +47,18 @@ export default function Register() {
         }
 
         try {
-            console.log("Registrando usuario...");
             await register({
                 name: form.name,
                 lastname: form.lastname,
                 email: form.email,
                 password: form.password,
             });
-            console.log("Usuario registrado, mostrando verificación");
             setRegisteredEmail(form.email);
             setShowVerification(true);
             setSuccess(
                 "Cuenta creada exitosamente. Revisa tu correo para obtener el código de verificación.",
             );
         } catch (err: any) {
-            console.error("Error al registrar:", err);
             // Si el error es por cuenta existente no verificada, mostrar pantalla de verificación
             if (
                 err.message.includes("en proceso de verificación") ||
