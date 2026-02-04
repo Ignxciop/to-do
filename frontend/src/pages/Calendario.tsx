@@ -108,32 +108,6 @@ function CalendarDay({
                 isSelected && "bg-primary text-primary-foreground",
                 !isSelected && "bg-background hover:bg-accent",
                 isOver && "ring-2 ring-primary bg-accent",
-                // Borde con color de prioridad más alta en mobile
-                hasTasks &&
-                    highestPriority &&
-                    !isSelected &&
-                    !isToday &&
-                    "md:border md:border-border border-l-4",
-                hasTasks &&
-                    highestPriority === "urgent" &&
-                    !isSelected &&
-                    !isToday &&
-                    "border-l-red-500",
-                hasTasks &&
-                    highestPriority === "high" &&
-                    !isSelected &&
-                    !isToday &&
-                    "border-l-orange-500",
-                hasTasks &&
-                    highestPriority === "medium" &&
-                    !isSelected &&
-                    !isToday &&
-                    "border-l-yellow-500",
-                hasTasks &&
-                    highestPriority === "low" &&
-                    !isSelected &&
-                    !isToday &&
-                    "border-l-blue-500",
             )}
         >
             <div className="flex flex-col h-full">

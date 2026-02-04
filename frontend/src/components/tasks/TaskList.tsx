@@ -56,13 +56,14 @@ export function TaskList({
                         No hay tareas
                     </p>
                 ) : (
-                    tasks.map((task) => (
+                    tasks.map((task, index) => (
                         <TaskItem
                             key={task.id}
                             task={task}
                             compact={compact}
                             onDeleteTask={onDeleteTask}
                             onEditTask={onEditTask}
+                            isLast={index === tasks.length - 1}
                         />
                     ))
                 )}

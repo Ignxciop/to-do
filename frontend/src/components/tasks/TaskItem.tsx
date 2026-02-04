@@ -27,6 +27,7 @@ interface TaskItemProps {
     compact?: boolean;
     onDeleteTask: (id: string) => Promise<void>;
     onEditTask?: (task: Task) => void;
+    isLast?: boolean;
 }
 
 const priorityColors = {
@@ -48,6 +49,7 @@ export function TaskItem({
     compact = false,
     onDeleteTask,
     onEditTask,
+    isLast = false,
 }: TaskItemProps) {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -77,7 +79,10 @@ export function TaskItem({
         <>
             <div
                 ref={setNodeRef}
-                style={style}
+                style={{
+                    ...style,
+                    touchAction: "none",
+                }}
                 className={cn(
                     "group flex items-start gap-3 py-3 hover:bg-accent/30 transition-all select-none",
                     isDragging && "opacity-50 bg-accent/50 cursor-grabbing",
@@ -105,8 +110,7 @@ export function TaskItem({
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onTouchStart={(e) => e.stopPropagation()}
+                                    style={{ touchAction: "auto" }}
                                 >
                                     <MoreVertical className="h-3 w-3" />
                                 </Button>
@@ -224,7 +228,7 @@ export function TaskItem({
                     </div>
                 </div>
             </div>
-            <Separator />
+            {!isLast && <Separator />}
         </>
     );
 }
