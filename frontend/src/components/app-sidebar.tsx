@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Sidebar,
     SidebarHeader,
@@ -21,9 +22,11 @@ import { AuthContext } from "../context/AuthContext";
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const auth = useContext(AuthContext);
     const user = auth?.user;
+    const navigate = useNavigate();
     const handleLogout = async () => {
         if (auth) {
             await auth.logout();
+            navigate("/auth/login");
         }
     };
     return (
