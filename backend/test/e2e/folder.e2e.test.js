@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 const testUser = {
     name: "testjest_name",
     lastname: "testjest_lastname",
-    email: `testjest_folder_${Date.now()}@mail.com`,
+    email: `testjest_folder_${Date.now()}@gmail.com`,
     password: "testjest_password",
 };
 
@@ -16,7 +16,7 @@ let userId;
 
 describe("Folder endpoints", () => {
     beforeAll(async () => {
-        // Crear usuario de prueba
+        // Crear usuario de prueba verificado
         userId = randomUUID();
         const user = await prisma.user.create({
             data: {
@@ -25,6 +25,7 @@ describe("Folder endpoints", () => {
                 lastname: testUser.lastname,
                 email: testUser.email,
                 password: testUser.password,
+                emailVerified: true,
             },
         });
 
