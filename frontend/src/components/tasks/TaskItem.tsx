@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { MoreVertical, Calendar, AlertCircle } from "lucide-react";
 import type { Task } from "../../hooks/useTasks";
-import { useTasks } from "../../hooks/useTasks";
 import { useDraggable } from "@dnd-kit/core";
-import { Checkbox } from "../ui/checkbox";
 import { Separator } from "../ui/separator";
 import {
     DropdownMenu,
@@ -28,6 +26,7 @@ interface TaskItemProps {
     task: Task;
     compact?: boolean;
     onDeleteTask: (id: string) => Promise<void>;
+    onEditTask?: (task: Task) => void;
 }
 
 const priorityColors = {
@@ -48,9 +47,8 @@ export function TaskItem({
     task,
     compact = false,
     onDeleteTask,
+    onEditTask,
 }: TaskItemProps) {
-    const { updateTask } = useTasks();
-    const [isUpdating, setIsUpdating] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -65,19 +63,6 @@ export function TaskItem({
               opacity: isDragging ? 0.5 : 1,
           }
         : undefined;
-
-    const handleStatusChange = async (completed: boolean) => {
-        setIsUpdating(true);
-        try {
-            await updateTask(task.id, {
-                status: completed ? "completed" : "pending",
-            });
-        } catch (error) {
-            console.error("Error updating task:", error);
-        } finally {
-            setIsUpdating(false);
-        }
-    };
 
     const handleDelete = async () => {
         try {
@@ -102,14 +87,6 @@ export function TaskItem({
                 {...attributes}
                 {...listeners}
             >
-                {/* Checkbox */}
-                <Checkbox
-                    checked={task.status === "completed"}
-                    onCheckedChange={handleStatusChange}
-                    disabled={isUpdating}
-                    className="mt-0.5 flex-shrink-0"
-                />
-
                 {/* Contenido de la tarea */}
                 <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-start justify-between gap-2">
@@ -132,7 +109,11 @@ export function TaskItem({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Editar</DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => onEditTask?.(task)}
+                                >
+                                    Editar
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => setShowDeleteDialog(true)}
                                     className="text-destructive"

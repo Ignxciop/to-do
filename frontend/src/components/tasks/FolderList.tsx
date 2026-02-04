@@ -10,6 +10,8 @@ interface FolderListProps {
     selectedFolderId: string | null;
     onDeleteFolder: (id: string) => Promise<void>;
     onDeleteTask: (id: string) => Promise<void>;
+    onEditFolder?: (folder: FolderType) => void;
+    onEditTask?: (task: Task) => void;
 }
 
 export function FolderList({
@@ -19,6 +21,8 @@ export function FolderList({
     selectedFolderId,
     onDeleteFolder,
     onDeleteTask,
+    onEditFolder,
+    onEditTask,
 }: FolderListProps) {
     // Filtrar solo carpetas raíz (sin parent)
     const rootFolders = folders.filter((f) => !f.parentId);
@@ -51,6 +55,8 @@ export function FolderList({
                         onFolderClick={onFolderClick}
                         selectedFolderId={selectedFolderId}
                         isSubfolder={false}
+                        onEditFolder={onEditFolder}
+                        onEditTask={onEditTask}
                         onDeleteFolder={onDeleteFolder}
                         onDeleteTask={onDeleteTask}
                     />

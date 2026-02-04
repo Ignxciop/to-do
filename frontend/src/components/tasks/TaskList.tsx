@@ -10,6 +10,7 @@ interface TaskListProps {
     compact?: boolean;
     depth?: number;
     onDeleteTask: (id: string) => Promise<void>;
+    onEditTask?: (task: Task) => void;
 }
 
 export function TaskList({
@@ -19,6 +20,7 @@ export function TaskList({
     compact = false,
     depth = 0,
     onDeleteTask,
+    onEditTask,
 }: TaskListProps) {
     const { setNodeRef, isOver } = useDroppable({
         id: folderId ? `tasklist-${folderId}` : "root",
@@ -60,6 +62,7 @@ export function TaskList({
                             task={task}
                             compact={compact}
                             onDeleteTask={onDeleteTask}
+                            onEditTask={onEditTask}
                         />
                     ))
                 )}

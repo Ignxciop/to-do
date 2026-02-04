@@ -33,6 +33,8 @@ interface FolderCardProps {
     depth?: number;
     onDeleteFolder: (id: string) => Promise<void>;
     onDeleteTask: (id: string) => Promise<void>;
+    onEditFolder?: (folder: FolderType) => void;
+    onEditTask?: (task: Task) => void;
 }
 
 export function FolderCard({
@@ -45,6 +47,8 @@ export function FolderCard({
     depth = 0,
     onDeleteFolder,
     onDeleteTask,
+    onEditFolder,
+    onEditTask,
 }: FolderCardProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -148,7 +152,11 @@ export function FolderCard({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => onEditFolder?.(folder)}
+                        >
+                            Editar
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => setShowDeleteDialog(true)}
                             className="text-destructive"
@@ -202,6 +210,8 @@ export function FolderCard({
                                     depth={depth + 1}
                                     onDeleteFolder={onDeleteFolder}
                                     onDeleteTask={onDeleteTask}
+                                    onEditFolder={onEditFolder}
+                                    onEditTask={onEditTask}
                                 />
                             ))}
                         </div>
@@ -215,6 +225,7 @@ export function FolderCard({
                             compact
                             depth={depth}
                             onDeleteTask={onDeleteTask}
+                            onEditTask={onEditTask}
                         />
                     )}
 

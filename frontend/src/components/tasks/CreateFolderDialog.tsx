@@ -100,13 +100,7 @@ export function CreateFolderDialog({
                         <Label htmlFor="color">Color</Label>
                         <Select value={color} onValueChange={setColor}>
                             <SelectTrigger id="color">
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className="w-4 h-4 rounded-full"
-                                        style={{ backgroundColor: color }}
-                                    />
-                                    <SelectValue />
-                                </div>
+                                <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {folderColors.map((c) => (

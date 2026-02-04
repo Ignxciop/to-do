@@ -5,8 +5,12 @@ import { FolderList } from "../components/tasks/FolderList";
 import { TaskList } from "../components/tasks/TaskList";
 import { CreateFolderDialog } from "../components/tasks/CreateFolderDialog";
 import { CreateTaskDialog } from "../components/tasks/CreateTaskDialog";
+import { EditFolderDialog } from "../components/tasks/EditFolderDialog";
+import { EditTaskDialog } from "../components/tasks/EditTaskDialog";
 import { useTasks } from "../hooks/useTasks";
 import { useFolders } from "../hooks/useFolders";
+import type { Folder } from "../hooks/useFolders";
+import type { Task } from "../hooks/useTasks";
 import MainLayout from "../layout/MainLayout";
 import {
     DndContext,
@@ -26,6 +30,8 @@ export default function Tasks() {
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
         null,
     );
+    const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
 
     const {
         folders,
@@ -50,6 +56,44 @@ export default function Tasks() {
         await deleteFolder(id);
         // Recargar tareas para mostrar las que quedaron sin carpeta
         await refetchTasks();
+    };
+
+    // Handlers para edición
+    const handleEditFolder = (folder: Folder) => {
+        setEditingFolder(folder);
+    };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+    };
+
+    const handleSaveFolder = async (
+        id: string,
+        data: { name: string; color?: string },
+    ) => {
+        try {
+            await updateFolder(id, data);
+            setEditingFolder(null);
+        } catch (error) {
+            console.error("Error updating folder:", error);
+        }
+    };
+
+    const handleSaveTask = async (
+        id: string,
+        data: {
+            title: string;
+            description?: string;
+            priority: "low" | "medium" | "high" | "urgent";
+            dueDate?: string;
+        },
+    ) => {
+        try {
+            await updateTask(id, data);
+            setEditingTask(null);
+        } catch (error) {
+            console.error("Error updating task:", error);
+        }
     };
 
     // Configurar sensores para drag and drop
@@ -217,6 +261,8 @@ export default function Tasks() {
                         selectedFolderId={selectedFolderId}
                         onDeleteFolder={handleDeleteFolder}
                         onDeleteTask={deleteTask}
+                        onEditFolder={handleEditFolder}
+                        onEditTask={handleEditTask}
                     />
 
                     {/* Tareas sin carpeta */}
@@ -229,6 +275,7 @@ export default function Tasks() {
                         title="Tareas sin carpeta"
                         folderId={null}
                         onDeleteTask={deleteTask}
+                        onEditTask={handleEditTask}
                     />
 
                     {/* Diálogos */}
@@ -243,6 +290,18 @@ export default function Tasks() {
                         onOpenChange={setOpenTaskDialog}
                         folders={folders}
                         onCreateTask={createTask}
+                    />
+                    <EditFolderDialog
+                        folder={editingFolder}
+                        open={!!editingFolder}
+                        onOpenChange={(open) => !open && setEditingFolder(null)}
+                        onSave={handleSaveFolder}
+                    />
+                    <EditTaskDialog
+                        task={editingTask}
+                        open={!!editingTask}
+                        onOpenChange={(open) => !open && setEditingTask(null)}
+                        onSave={handleSaveTask}
                     />
                 </div>
 
