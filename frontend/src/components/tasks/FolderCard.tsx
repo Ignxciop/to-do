@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, Folder, MoreVertical } from "lucide-react";
 import type { Folder as FolderType } from "../../hooks/useFolders";
 import type { Task } from "../../hooks/useTasks";
@@ -22,6 +22,31 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
+
+// Utility functions para localStorage
+const STORAGE_KEY = "enfok-folder-expanded-state";
+
+const getFolderExpandedState = (folderId: string): boolean => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return true; // Por defecto expandido
+        const state = JSON.parse(stored);
+        return state[folderId] !== undefined ? state[folderId] : true;
+    } catch {
+        return true;
+    }
+};
+
+const setFolderExpandedState = (folderId: string, expanded: boolean) => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const state = stored ? JSON.parse(stored) : {};
+        state[folderId] = expanded;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+        console.error("Error saving folder state:", error);
+    }
+};
 
 interface FolderCardProps {
     folder: FolderType;
@@ -50,8 +75,15 @@ export function FolderCard({
     onEditFolder,
     onEditTask,
 }: FolderCardProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(() =>
+        getFolderExpandedState(folder.id),
+    );
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+    // Guardar el estado en localStorage cuando cambie
+    useEffect(() => {
+        setFolderExpandedState(folder.id, isExpanded);
+    }, [isExpanded, folder.id]);
 
     const handleDelete = async () => {
         try {
