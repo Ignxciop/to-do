@@ -106,7 +106,7 @@ export default function Tasks() {
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 500, // 500ms de long press
+                delay: 1500, // 1500ms de long press
                 tolerance: 10, // 10px de tolerancia para evitar cancelar
             },
         }),
