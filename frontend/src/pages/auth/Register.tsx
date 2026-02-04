@@ -15,6 +15,7 @@ export default function Register() {
         lastname: "",
         email: "",
         password: "",
+        confirmPassword: "",
     });
     const [verificationCode, setVerificationCode] = useState("");
     const [error, setError] = useState("");
@@ -32,14 +33,35 @@ export default function Register() {
         e.preventDefault();
         setError("");
         setSuccess("");
+
+        // Validar que las contraseñas coincidan
+        if (form.password !== form.confirmPassword) {
+            setError("Las contraseñas no coinciden");
+            return;
+        }
+
+        // Validar longitud mínima de contraseña
+        if (form.password.length < 6) {
+            setError("La contraseña debe tener al menos 6 caracteres");
+            return;
+        }
+
         try {
-            await register(form);
+            console.log("Registrando usuario...");
+            await register({
+                name: form.name,
+                lastname: form.lastname,
+                email: form.email,
+                password: form.password,
+            });
+            console.log("Usuario registrado, mostrando verificación");
             setRegisteredEmail(form.email);
             setShowVerification(true);
             setSuccess(
                 "Cuenta creada exitosamente. Revisa tu correo para obtener el código de verificación.",
             );
         } catch (err: any) {
+            console.error("Error al registrar:", err);
             setError(err.message || "Error al registrarse");
         }
     };
@@ -185,10 +207,30 @@ export default function Register() {
                             value={form.password}
                             onChange={handleChange}
                             required
+                            minLength={6}
+                            className="mt-1"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                            Mínimo 6 caracteres
+                        </p>
+                    </div>
+                    <div>
+                        <Label htmlFor="confirmPassword">
+                            Confirmar Contraseña
+                        </Label>
+                        <Input
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            type="password"
+                            value={form.confirmPassword}
+                            onChange={handleChange}
+                            required
+                            minLength={6}
                             className="mt-1"
                         />
                     </div>
                     {error && <Alert variant="destructive">{error}</Alert>}
+                    {success && <Alert>{success}</Alert>}
                     <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? "Cargando..." : "Registrarse"}
                     </Button>
