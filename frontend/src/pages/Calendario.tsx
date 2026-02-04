@@ -41,18 +41,6 @@ export default function Calendario() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    // Debug: ver cuántas tareas hay y si tienen dueDate
-    console.log("Total tasks:", tasks.length);
-    console.log("Tasks with dueDate:", tasks.filter((t) => t.dueDate).length);
-    console.log(
-        "Sample tasks:",
-        tasks.slice(0, 3).map((t) => ({
-            title: t.title,
-            dueDate: t.dueDate,
-            dueDateType: typeof t.dueDate,
-        })),
-    );
-
     // Obtener el primer y último día del mes actual
     const firstDayOfMonth = new Date(
         currentDate.getFullYear(),
@@ -93,8 +81,8 @@ export default function Calendario() {
     const getTasksForDay = (date: Date): Task[] => {
         if (!date) return [];
         return tasks.filter((task) => {
-            if (!task.dueDate) return false;
-            const taskDate = new Date(task.dueDate);
+            // Usar createdAt para mostrar tareas en el calendario
+            const taskDate = new Date(task.createdAt);
             // Normalizar ambas fechas a medianoche para comparación
             const normalizedTaskDate = new Date(
                 taskDate.getFullYear(),
