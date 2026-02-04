@@ -30,6 +30,7 @@ interface FolderCardProps {
     onFolderClick: (folderId: string | null) => void;
     selectedFolderId: string | null;
     isSubfolder: boolean;
+    depth?: number;
     onDeleteFolder: (id: string) => Promise<void>;
     onDeleteTask: (id: string) => Promise<void>;
 }
@@ -41,6 +42,7 @@ export function FolderCard({
     onFolderClick,
     selectedFolderId,
     isSubfolder,
+    depth = 0,
     onDeleteFolder,
     onDeleteTask,
 }: FolderCardProps) {
@@ -197,6 +199,7 @@ export function FolderCard({
                                     onFolderClick={onFolderClick}
                                     selectedFolderId={selectedFolderId}
                                     isSubfolder={true}
+                                    depth={depth + 1}
                                     onDeleteFolder={onDeleteFolder}
                                     onDeleteTask={onDeleteTask}
                                 />
@@ -210,6 +213,7 @@ export function FolderCard({
                             tasks={folderTasks}
                             folderId={folder.id}
                             compact
+                            depth={depth}
                             onDeleteTask={onDeleteTask}
                         />
                     )}

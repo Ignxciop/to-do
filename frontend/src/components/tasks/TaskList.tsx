@@ -8,6 +8,7 @@ interface TaskListProps {
     title?: string;
     folderId?: string | null;
     compact?: boolean;
+    depth?: number;
     onDeleteTask: (id: string) => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ export function TaskList({
     title,
     folderId,
     compact = false,
+    depth = 0,
     onDeleteTask,
 }: TaskListProps) {
     const { setNodeRef, isOver } = useDroppable({
@@ -41,7 +43,12 @@ export function TaskList({
                     {title}
                 </h3>
             )}
-            <div className="space-y-1">
+            <div
+                className="space-y-1"
+                style={{
+                    marginLeft: depth > 0 ? `${(depth + 1) * 24}px` : "0",
+                }}
+            >
                 {tasks.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                         No hay tareas
