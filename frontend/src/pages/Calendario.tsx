@@ -185,7 +185,7 @@ function DraggableTask({ task, onClick }: DraggableTaskProps) {
                 ...style,
                 userSelect: "none",
                 WebkitUserSelect: "none",
-                touchAction: "pan-y",
+                touchAction: "none",
             }}
             {...attributes}
             {...listeners}
@@ -498,8 +498,8 @@ export default function Calendario() {
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 300,
-                tolerance: 5,
+                delay: 500, // 500ms de long press
+                tolerance: 10, // 10px de tolerancia
             },
         }),
     );

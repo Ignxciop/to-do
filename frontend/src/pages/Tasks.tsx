@@ -106,8 +106,8 @@ export default function Tasks() {
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 300, // 300ms de long press
-                tolerance: 5,
+                delay: 500, // 500ms de long press
+                tolerance: 10, // 10px de tolerancia para evitar cancelar
             },
         }),
     );
