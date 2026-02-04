@@ -55,9 +55,7 @@ export function EditTaskDialog({
                 title: task.title,
                 description: task.description || "",
                 priority: task.priority,
-                dueDate: task.dueDate
-                    ? new Date(task.dueDate).toISOString().split("T")[0]
-                    : "",
+                dueDate: task.dueDate ? task.dueDate.split("T")[0] : "",
             });
         }
     }, [task]);

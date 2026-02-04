@@ -177,13 +177,26 @@ export function TaskItem({
                             <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
                                 <span>
-                                    {new Date(task.dueDate).toLocaleDateString(
-                                        "es-ES",
-                                        {
-                                            day: "numeric",
-                                            month: "short",
-                                        },
-                                    )}
+                                    {(() => {
+                                        // Extraer fecha sin conversión de zona horaria
+                                        const dateStr =
+                                            task.dueDate.split("T")[0];
+                                        const [year, month, day] = dateStr
+                                            .split("-")
+                                            .map(Number);
+                                        const date = new Date(
+                                            year,
+                                            month - 1,
+                                            day,
+                                        );
+                                        return date.toLocaleDateString(
+                                            "es-ES",
+                                            {
+                                                day: "numeric",
+                                                month: "short",
+                                            },
+                                        );
+                                    })()}
                                 </span>
                             </div>
                         )}
