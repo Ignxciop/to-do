@@ -13,7 +13,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return (
         <SidebarProvider>
             <div className="flex min-h-screen w-full bg-muted/50">
-                <AppSidebar className="py-2" />
+                <AppSidebar />
                 <main className="flex-1 bg-muted/50 overflow-y-auto">
                     {isMobile ? (
                         <div className="flex-1 w-full h-full flex flex-col">

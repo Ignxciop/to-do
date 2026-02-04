@@ -33,7 +33,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     };
     return (
         <Sidebar collapsible="offcanvas" {...props}>
-            <SidebarHeader className="px-6">
+            <SidebarHeader className="px-6 pt-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
@@ -100,7 +100,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <SidebarFooter>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-3 w-full min-w-0 p-3 rounded-xl transition-colors focus:outline-none hover:bg-white/80 group">
+                        <button className="flex items-center gap-3 w-full min-w-0 p-3 rounded-xl transition-colors focus:outline-none hover:bg-sidebar-accent group">
                             {/* Avatar usuario */}
                             <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                                 <User2 className="w-8 h-8 text-muted-foreground" />
