@@ -35,7 +35,7 @@ import {
     DragOverlay,
     useDraggable,
     useDroppable,
-    PointerSensor,
+    MouseSensor,
     TouchSensor,
     useSensor,
     useSensors,
@@ -490,15 +490,16 @@ export default function Calendario() {
     const todayStatus = getTodayStatus();
 
     // Configurar sensores para drag and drop
+    // MouseSensor para desktop, TouchSensor con delay para móviles
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
                 distance: 8,
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 1500, // 1500ms de long press
+                delay: 750, // 750ms de long press
                 tolerance: 10, // 10px de tolerancia
             },
         }),

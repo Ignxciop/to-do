@@ -17,7 +17,7 @@ import {
     type DragEndEvent,
     DragOverlay,
     type DragStartEvent,
-    PointerSensor,
+    MouseSensor,
     TouchSensor,
     useSensor,
     useSensors,
@@ -97,16 +97,16 @@ export default function Tasks() {
     };
 
     // Configurar sensores para drag and drop
-    // TouchSensor con delay para long press en móviles
+    // MouseSensor para desktop, TouchSensor con delay para móviles
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
                 distance: 8, // 8px de movimiento antes de activar drag
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 1500, // 1500ms de long press
+                delay: 750, // 750ms de long press
                 tolerance: 10, // 10px de tolerancia para evitar cancelar
             },
         }),
