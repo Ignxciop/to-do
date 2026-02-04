@@ -185,7 +185,7 @@ function DraggableTask({ task, onClick }: DraggableTaskProps) {
                 ...style,
                 userSelect: "none",
                 WebkitUserSelect: "none",
-                touchAction: "none",
+                touchAction: "pan-y",
             }}
             {...attributes}
             {...listeners}
@@ -1229,7 +1229,7 @@ export default function Calendario() {
                 </Dialog>
 
                 {/* DragOverlay para mostrar la tarea mientras se arrastra */}
-                <DragOverlay>
+                <DragOverlay dropAnimation={null}>
                     {activeId &&
                         (() => {
                             const task = tasks?.find(

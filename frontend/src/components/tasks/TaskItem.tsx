@@ -81,7 +81,7 @@ export function TaskItem({
                 ref={setNodeRef}
                 style={{
                     ...style,
-                    touchAction: "none",
+                    touchAction: "pan-y",
                 }}
                 className={cn(
                     "group flex items-start gap-3 py-3 hover:bg-accent/30 transition-all select-none",

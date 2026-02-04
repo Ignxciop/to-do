@@ -136,7 +136,7 @@ export function FolderCard({
             ref={setRefs}
             style={{
                 ...style,
-                touchAction: "none",
+                touchAction: "pan-y",
             }}
             className={cn(
                 "transition-all select-none",
