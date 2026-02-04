@@ -207,7 +207,12 @@ function DraggableTask({ task, onClick }: DraggableTaskProps) {
     return (
         <div
             ref={setNodeRef}
-            style={style}
+            style={{
+                ...style,
+                userSelect: "none",
+                WebkitUserSelect: "none",
+                touchAction: "pan-y",
+            }}
             {...attributes}
             {...listeners}
             onClick={(e) => {
@@ -215,7 +220,7 @@ function DraggableTask({ task, onClick }: DraggableTaskProps) {
                 onClick();
             }}
             className={cn(
-                "w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors select-none touch-none",
+                "w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors",
                 isDragging && "opacity-50 cursor-grabbing",
                 !isDragging && "cursor-grab",
             )}

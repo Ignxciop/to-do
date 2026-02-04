@@ -136,26 +136,24 @@ export function FolderCard({
             ref={setRefs}
             style={style}
             className={cn(
-                "transition-all",
+                "transition-all select-none",
                 isSubfolder
                     ? "ml-6 mb-2"
                     : "bg-card rounded-lg border border-border shadow-sm hover:shadow-md",
                 isOver && "ring-2 ring-primary",
-                isDragging && "opacity-50",
+                isDragging && "opacity-50 cursor-grabbing",
+                !isDragging && !isSubfolder && "cursor-grab",
             )}
+            {...attributes}
+            {...listeners}
         >
             {/* Header de la carpeta */}
-            <div
-                className={cn(
-                    "flex items-center justify-between p-4 select-none",
-                    !isSubfolder && "cursor-move",
-                )}
-                {...attributes}
-                {...listeners}
-            >
+            <div className={cn("flex items-center justify-between p-4")}>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         className="hover:bg-muted rounded p-1 transition-colors flex-shrink-0"
                     >
                         {isExpanded ? (
@@ -179,6 +177,8 @@ export function FolderCard({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 flex-shrink-0"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
                         >
                             <MoreVertical className="h-4 w-4" />
                         </Button>
