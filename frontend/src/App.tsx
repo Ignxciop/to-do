@@ -9,6 +9,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
+import Calendario from "./pages/Calendario";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 
@@ -30,6 +31,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/tasks" element={<Tasks />} />
+                        <Route path="/calendario" element={<Calendario />} />
                         <Route path="/login" element={<Login />} />
                         <Route
                             path="/auth/login"

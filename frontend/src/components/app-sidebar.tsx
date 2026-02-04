@@ -9,7 +9,15 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
 } from "../components/ui/sidebar";
-import { User2, Home, ListTodo, Target, Moon, Sun } from "lucide-react";
+import {
+    User2,
+    Home,
+    ListTodo,
+    Target,
+    Moon,
+    Sun,
+    Calendar,
+} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -87,11 +95,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                             className="w-full transition-colors"
                         >
                             <a
-                                href="/goals"
+                                href="/calendario"
                                 className="flex items-center py-3 text-lg font-bold"
                             >
-                                <Target className="size-4 mr-2" />
-                                Objetivos
+                                <Calendar className="size-4 mr-2" />
+                                Calendario
                             </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
