@@ -27,11 +27,11 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile
+            args:
+                VITE_API_URL: ""
         restart: unless-stopped
         ports:
             - "4003:4003"
-        environment:
-            API_URL: http://localhost:4004
         depends_on:
             - backend
         networks:
