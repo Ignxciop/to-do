@@ -27,3 +27,32 @@ export const loginValidator = [
         next();
     },
 ];
+
+export const verifyEmailValidator = [
+    body("email").isEmail().withMessage("Email inválido"),
+    body("code")
+        .notEmpty()
+        .withMessage("El código de verificación es requerido")
+        .isLength({ min: 6, max: 6 })
+        .withMessage("El código debe tener 6 dígitos")
+        .isNumeric()
+        .withMessage("El código debe ser numérico"),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    },
+];
+
+export const resendVerificationValidator = [
+    body("email").isEmail().withMessage("Email inválido"),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    },
+];

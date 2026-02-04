@@ -4,14 +4,27 @@ import {
     loginController,
     refreshController,
     logoutController,
+    verifyEmailController,
+    resendVerificationController,
 } from "../controllers/auth.js";
-import { registerValidator, loginValidator } from "../validators/auth.js";
+import {
+    registerValidator,
+    loginValidator,
+    verifyEmailValidator,
+    resendVerificationValidator,
+} from "../validators/auth.js";
 import { requireAuth } from "../middlewares/authMiddleware.js";
 import { getUserById } from "../services/auth.js";
 
 const router = express.Router();
 
 router.post("/auth/register", registerValidator, registerController);
+router.post("/auth/verify-email", verifyEmailValidator, verifyEmailController);
+router.post(
+    "/auth/resend-verification",
+    resendVerificationValidator,
+    resendVerificationController,
+);
 router.post("/auth/login", loginValidator, loginController);
 router.post("/auth/refresh", refreshController);
 router.post("/auth/logout", logoutController);

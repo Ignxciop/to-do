@@ -8,6 +8,27 @@ import {
 export const registerController = async (req, res) => {
     try {
         const user = await authService.register(req.body);
+        // No generar tokens aún, la cuenta necesita verificación primero
+        res.status(201).json({
+            message:
+                "Cuenta creada exitosamente. Por favor verifica tu correo electrónico.",
+            user: {
+                id: user.id,
+                name: user.name,
+                lastname: user.lastname,
+                email: user.email,
+                emailVerified: user.emailVerified,
+            },
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+};
+
+export const verifyEmailController = async (req, res) => {
+    try {
+        const user = await authService.verifyEmail(req.body);
+        // Ahora sí, generar tokens después de la verificación
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
         res.cookie("refreshToken", refreshToken, {
@@ -17,15 +38,26 @@ export const registerController = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: "/api/auth/refresh",
         });
-        res.status(201).json({
+        res.json({
+            message: "Correo verificado exitosamente",
             user: {
                 id: user.id,
                 name: user.name,
                 lastname: user.lastname,
                 email: user.email,
+                emailVerified: user.emailVerified,
             },
             accessToken,
         });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+};
+
+export const resendVerificationController = async (req, res) => {
+    try {
+        const result = await authService.resendVerificationCode(req.body.email);
+        res.json(result);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
