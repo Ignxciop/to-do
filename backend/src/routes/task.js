@@ -6,6 +6,7 @@ import {
     updateTaskController,
     deleteTaskController,
 } from "../controllers/task.js";
+import { getTasksSummaryController } from "../controllers/taskSummary.js";
 import {
     createTaskValidator,
     updateTaskValidator,
@@ -15,6 +16,7 @@ import { requireAuth } from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 router.get("/tasks", requireAuth, getAllTasksController);
+router.get("/tasks/summary", requireAuth, getTasksSummaryController);
 router.post("/task", requireAuth, createTaskValidator, createTaskController);
 router.get("/task/:id", requireAuth, getTaskByIdController);
 router.put("/task/:id", requireAuth, updateTaskValidator, updateTaskController);
