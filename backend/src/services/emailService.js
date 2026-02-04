@@ -166,6 +166,14 @@ export async function sendVerificationEmail(email, name, code) {
         };
     } catch (error) {
         console.error("Error enviando correo:", error);
-        throw new Error("No se pudo enviar el correo de verificación");
+        console.error("SMTP Config:", {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            user: process.env.SMTP_USER,
+            hasPassword: !!process.env.SMTP_PASS,
+        });
+        throw new Error(
+            `No se pudo enviar el correo de verificación: ${error.message}`,
+        );
     }
 }

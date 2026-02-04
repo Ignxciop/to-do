@@ -35,9 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true); // loading inicia en true
+    const [initializing, setInitializing] = useState(true); // Nuevo estado para carga inicial
 
     useEffect(() => {
-        refresh();
+        refresh().finally(() => setInitializing(false));
     }, []);
 
     async function login(email: string, password: string) {
@@ -178,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 refresh,
             }}
         >
-            {loading ? null : children}
+            {initializing ? null : children}
         </AuthContext.Provider>
     );
 }

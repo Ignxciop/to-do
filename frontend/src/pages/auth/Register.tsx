@@ -71,9 +71,6 @@ export default function Register() {
             ) {
                 setRegisteredEmail(form.email);
                 setShowVerification(true);
-                setError(
-                    "Esta cuenta ya existe pero no ha sido verificada. Ingresa el código que recibiste por correo o solicita uno nuevo.",
-                );
             } else {
                 setError(err.message || "Error al registrarse");
             }
@@ -135,8 +132,16 @@ export default function Register() {
                                 El código expira en 5 minutos
                             </p>
                         </div>
-                        {error && <Alert variant="destructive">{error}</Alert>}
-                        {success && <Alert>{success}</Alert>}
+                        {error && (
+                            <Alert variant="destructive">
+                                <p className="text-sm">{error}</p>
+                            </Alert>
+                        )}
+                        {success && (
+                            <Alert>
+                                <p className="text-sm">{success}</p>
+                            </Alert>
+                        )}
                         <Button
                             type="submit"
                             className="w-full"
@@ -243,8 +248,16 @@ export default function Register() {
                             className="mt-1"
                         />
                     </div>
-                    {error && <Alert variant="destructive">{error}</Alert>}
-                    {success && <Alert>{success}</Alert>}
+                    {error && (
+                        <Alert variant="destructive">
+                            <p className="text-sm">{error}</p>
+                        </Alert>
+                    )}
+                    {success && (
+                        <Alert>
+                            <p className="text-sm">{success}</p>
+                        </Alert>
+                    )}
                     <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? "Cargando..." : "Registrarse"}
                     </Button>
