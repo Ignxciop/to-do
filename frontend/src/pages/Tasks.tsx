@@ -41,8 +41,16 @@ export default function Tasks() {
         updateTask,
         createTask,
         deleteTask,
+        refetch: refetchTasks,
         error: tasksError,
     } = useTasks();
+
+    // Wrapper para deleteFolder que también recarga las tareas
+    const handleDeleteFolder = async (id: string) => {
+        await deleteFolder(id);
+        // Recargar tareas para mostrar las que quedaron sin carpeta
+        await refetchTasks();
+    };
 
     // Configurar sensores para drag and drop
     // TouchSensor con delay para long press en móviles
@@ -207,7 +215,7 @@ export default function Tasks() {
                         tasks={Array.isArray(tasks) ? tasks : []}
                         onFolderClick={setSelectedFolderId}
                         selectedFolderId={selectedFolderId}
-                        onDeleteFolder={deleteFolder}
+                        onDeleteFolder={handleDeleteFolder}
                         onDeleteTask={deleteTask}
                     />
 
