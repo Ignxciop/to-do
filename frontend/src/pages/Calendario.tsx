@@ -28,6 +28,18 @@ import {
     DialogHeader,
     DialogTitle,
 } from "../components/ui/dialog";
+import {
+    DndContext,
+    type DragEndEvent,
+    type DragStartEvent,
+    DragOverlay,
+    useDraggable,
+    useDroppable,
+    PointerSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
 
 const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const MONTHS = [
@@ -59,12 +71,221 @@ const priorityLabels = {
     urgent: "Urgente",
 };
 
+// Componente para día del calendario con droppable
+interface CalendarDayProps {
+    date: Date;
+    isToday: boolean;
+    isSelected: boolean;
+    hasTasks: boolean;
+    totalTasks: number;
+    highestPriority: "urgent" | "high" | "medium" | "low" | null;
+    taskCounts: Record<string, number>;
+    onClick: () => void;
+}
+
+function CalendarDay({
+    date,
+    isToday,
+    isSelected,
+    hasTasks,
+    totalTasks,
+    highestPriority,
+    taskCounts,
+    onClick,
+}: CalendarDayProps) {
+    const dayId = `calendar-day-${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const { setNodeRef, isOver } = useDroppable({
+        id: dayId,
+    });
+
+    return (
+        <button
+            ref={setNodeRef}
+            onClick={onClick}
+            className={cn(
+                "aspect-square rounded-lg border transition-all hover:border-primary hover:shadow-sm relative p-2",
+                isToday && "border-primary border-2 font-bold",
+                isSelected && "bg-primary text-primary-foreground",
+                !isSelected && "bg-background hover:bg-accent",
+                isOver && "ring-2 ring-primary bg-accent",
+                // Borde con color de prioridad más alta en mobile
+                hasTasks &&
+                    highestPriority &&
+                    !isSelected &&
+                    !isToday &&
+                    "md:border md:border-border border-l-4",
+                hasTasks &&
+                    highestPriority === "urgent" &&
+                    !isSelected &&
+                    !isToday &&
+                    "border-l-red-500",
+                hasTasks &&
+                    highestPriority === "high" &&
+                    !isSelected &&
+                    !isToday &&
+                    "border-l-orange-500",
+                hasTasks &&
+                    highestPriority === "medium" &&
+                    !isSelected &&
+                    !isToday &&
+                    "border-l-yellow-500",
+                hasTasks &&
+                    highestPriority === "low" &&
+                    !isSelected &&
+                    !isToday &&
+                    "border-l-blue-500",
+            )}
+        >
+            <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between">
+                    <span className="text-sm">{date.getDate()}</span>
+                    {/* Badge mobile con total de tareas */}
+                    {hasTasks && (
+                        <span
+                            className={cn(
+                                "md:hidden text-[7px] font-bold min-w-[12px] h-[12px] px-0.5 rounded-full flex items-center justify-center",
+                                highestPriority === "urgent" &&
+                                    "bg-red-500 text-white",
+                                highestPriority === "high" &&
+                                    "bg-orange-500 text-white",
+                                highestPriority === "medium" &&
+                                    "bg-yellow-500 text-white",
+                                highestPriority === "low" &&
+                                    "bg-blue-500 text-white",
+                            )}
+                        >
+                            {totalTasks}
+                        </span>
+                    )}
+                </div>
+                {/* Indicadores desktop con prioridades detalladas */}
+                {hasTasks && (
+                    <div className="hidden md:flex flex-wrap gap-0.5 mt-auto">
+                        {Object.entries(taskCounts).map(([priority, count]) => (
+                            <div
+                                key={priority}
+                                className="flex items-center gap-0.5"
+                            >
+                                <div
+                                    className={cn(
+                                        "w-1.5 h-1.5 rounded-full",
+                                        priorityColors[
+                                            priority as keyof typeof priorityColors
+                                        ],
+                                    )}
+                                />
+                                <span className="text-[10px]">{count}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </button>
+    );
+}
+
+// Componente para tarea draggable
+interface DraggableTaskProps {
+    task: Task;
+    onClick: () => void;
+}
+
+function DraggableTask({ task, onClick }: DraggableTaskProps) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
+        useDraggable({
+            id: `calendar-task-${task.id}`,
+            data: { task },
+        });
+
+    const style = transform
+        ? {
+              transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+              opacity: isDragging ? 0.5 : 1,
+          }
+        : undefined;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className={cn(
+                "w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-move",
+                isDragging && "opacity-50",
+            )}
+        >
+            <div
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick();
+                }}
+                className="cursor-pointer"
+            >
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">
+                            {task.title}
+                        </h4>
+                        {task.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                {task.description}
+                            </p>
+                        )}
+                    </div>
+                    <div
+                        className={cn(
+                            "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                            priorityColors[task.priority],
+                        )}
+                    />
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                    <span
+                        className={cn(
+                            "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                            task.priority === "low" &&
+                                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                            task.priority === "medium" &&
+                                "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+                            task.priority === "high" &&
+                                "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+                            task.priority === "urgent" &&
+                                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                        )}
+                    >
+                        {priorityLabels[task.priority]}
+                    </span>
+                    {task.status !== "pending" && (
+                        <span
+                            className={cn(
+                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                task.status === "completed" &&
+                                    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                                task.status === "in_progress" &&
+                                    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                task.status === "cancelled" &&
+                                    "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                            )}
+                        >
+                            {task.status === "completed" && "Completada"}
+                            {task.status === "in_progress" && "En progreso"}
+                            {task.status === "cancelled" && "Cancelada"}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function Calendario() {
     const { tasks, loading, updateTask } = useTasks();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [showTaskDialog, setShowTaskDialog] = useState(false);
+    const [activeId, setActiveId] = useState<string | null>(null);
 
     // Filtros para tareas sin fecha
     const [searchQuery, setSearchQuery] = useState("");
@@ -292,6 +513,58 @@ export default function Calendario() {
     const todayLoad = getTodayLoad();
     const todayStatus = getTodayStatus();
 
+    // Configurar sensores para drag and drop
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 300,
+                tolerance: 5,
+            },
+        }),
+    );
+
+    // Handlers para drag and drop
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (!over) return;
+
+        const taskId = (active.id as string).replace("calendar-task-", "");
+        const targetDateStr = over.id as string;
+
+        // Verificar que se está soltando sobre un día válido
+        if (!targetDateStr.startsWith("calendar-day-")) return;
+
+        // Extraer la fecha del id del día
+        const [year, month, day] = targetDateStr
+            .replace("calendar-day-", "")
+            .split("-")
+            .map(Number);
+
+        // Crear la fecha en formato ISO (YYYY-MM-DD)
+        const newDueDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+        try {
+            await updateTask(taskId, { dueDate: newDueDate });
+        } catch (error) {
+            console.error("Error actualizando fecha de tarea:", error);
+        }
+    };
+
+    const handleDragCancel = () => {
+        setActiveId(null);
+    };
+
     // Abrir dialog de tarea
     const handleTaskClick = (task: Task) => {
         setSelectedTask(task);
@@ -322,786 +595,690 @@ export default function Calendario() {
 
     return (
         <MainLayout title="Calendario">
-            <div className="space-y-6 p-6 max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Calendario
-                        </h1>
-                        <p className="text-muted-foreground mt-1">
-                            Visualiza tus tareas por fecha
-                        </p>
-                    </div>
-                    <Button onClick={goToToday} variant="outline" size="sm">
-                        Hoy
-                    </Button>
-                </div>
-
-                {/* Vista rápida */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Tareas atrasadas */}
-                    <div
-                        className={cn(
-                            "bg-card rounded-lg border p-4",
-                            overdueTasks.length > 0
-                                ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/20"
-                                : "border-border",
-                        )}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div
-                                className={cn(
-                                    "p-2 rounded-full",
-                                    overdueTasks.length > 0
-                                        ? "bg-red-500/10"
-                                        : "bg-muted",
-                                )}
-                            >
-                                <AlertTriangle
-                                    className={cn(
-                                        "h-5 w-5",
-                                        overdueTasks.length > 0
-                                            ? "text-red-500"
-                                            : "text-muted-foreground",
-                                    )}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Tareas atrasadas
-                                </p>
-                                <p
-                                    className={cn(
-                                        "text-2xl font-bold",
-                                        overdueTasks.length > 0
-                                            ? "text-red-500"
-                                            : "text-foreground",
-                                    )}
-                                >
-                                    {overdueTasks.length}
-                                </p>
-                            </div>
+            <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+            >
+                <div className="space-y-6 p-6 max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">
+                                Calendario
+                            </h1>
+                            <p className="text-muted-foreground mt-1">
+                                Visualiza tus tareas por fecha
+                            </p>
                         </div>
+                        <Button onClick={goToToday} variant="outline" size="sm">
+                            Hoy
+                        </Button>
                     </div>
 
-                    {/* Carga del día */}
-                    <div
-                        className={cn(
-                            "bg-card rounded-lg border p-4",
-                            todayLoad.level === "high" &&
-                                "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
-                            todayLoad.level === "medium" &&
-                                "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20",
-                            todayLoad.level === "low" && "border-border",
-                        )}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div
-                                className={cn(
-                                    "p-2 rounded-full",
-                                    todayLoad.level === "high" &&
-                                        "bg-orange-500/10",
-                                    todayLoad.level === "medium" &&
-                                        "bg-yellow-500/10",
-                                    todayLoad.level === "low" && "bg-muted",
-                                )}
-                            >
-                                <TrendingUp
-                                    className={cn(
-                                        "h-5 w-5",
-                                        todayLoad.level === "high" &&
-                                            "text-orange-500",
-                                        todayLoad.level === "medium" &&
-                                            "text-yellow-500",
-                                        todayLoad.level === "low" &&
-                                            "text-muted-foreground",
-                                    )}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Carga de hoy
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {todayLoad.level === "high" && "Alta"}
-                                    {todayLoad.level === "medium" && "Media"}
-                                    {todayLoad.level === "low" &&
-                                        (todayLoad.count > 0
-                                            ? "Baja"
-                                            : "Sin tareas")}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Estado del día */}
-                    <div
-                        className={cn(
-                            "bg-card rounded-lg border p-4",
-                            todayStatus.status === "completed" &&
-                                "border-green-500/50 bg-green-50/50 dark:bg-green-950/20",
-                            todayStatus.status === "in_progress" &&
-                                "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20",
-                            todayStatus.status === "pending" && "border-border",
-                        )}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div
-                                className={cn(
-                                    "p-2 rounded-full",
-                                    todayStatus.status === "completed" &&
-                                        "bg-green-500/10",
-                                    todayStatus.status === "in_progress" &&
-                                        "bg-blue-500/10",
-                                    todayStatus.status === "pending" &&
-                                        "bg-muted",
-                                )}
-                            >
-                                <CheckCircle
-                                    className={cn(
-                                        "h-5 w-5",
-                                        todayStatus.status === "completed" &&
-                                            "text-green-500",
-                                        todayStatus.status === "in_progress" &&
-                                            "text-blue-500",
-                                        todayStatus.status === "pending" &&
-                                            "text-muted-foreground",
-                                    )}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Estado de hoy
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {todayStatus.status === "completed" &&
-                                        "Completado"}
-                                    {todayStatus.status === "in_progress" &&
-                                        `${todayStatus.count} en curso`}
-                                    {todayStatus.status === "pending" &&
-                                        `${todayStatus.count} pendiente${todayStatus.count !== 1 ? "s" : ""}`}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Contenedor principal */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Calendario */}
-                    <div className="bg-card rounded-lg border border-border p-6 lg:col-span-2">
-                        {/* Controles de navegación */}
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-semibold">
-                                {MONTHS[currentDate.getMonth()]}{" "}
-                                {currentDate.getFullYear()}
-                            </h2>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={previousMonth}
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={nextMonth}
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Días de la semana */}
-                        <div className="grid grid-cols-7 gap-2 mb-2">
-                            {DAYS.map((day) => (
+                    {/* Vista rápida */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Tareas atrasadas */}
+                        <div
+                            className={cn(
+                                "bg-card rounded-lg border p-4",
+                                overdueTasks.length > 0
+                                    ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/20"
+                                    : "border-border",
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
                                 <div
-                                    key={day}
-                                    className="text-center text-sm font-medium text-muted-foreground py-2"
+                                    className={cn(
+                                        "p-2 rounded-full",
+                                        overdueTasks.length > 0
+                                            ? "bg-red-500/10"
+                                            : "bg-muted",
+                                    )}
                                 >
-                                    {day}
+                                    <AlertTriangle
+                                        className={cn(
+                                            "h-5 w-5",
+                                            overdueTasks.length > 0
+                                                ? "text-red-500"
+                                                : "text-muted-foreground",
+                                        )}
+                                    />
                                 </div>
-                            ))}
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Tareas atrasadas
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            "text-2xl font-bold",
+                                            overdueTasks.length > 0
+                                                ? "text-red-500"
+                                                : "text-foreground",
+                                        )}
+                                    >
+                                        {overdueTasks.length}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Días del mes */}
-                        <div className="grid grid-cols-7 gap-2">
-                            {calendarDays.map((date, index) => {
-                                if (!date) {
+                        {/* Carga del día */}
+                        <div
+                            className={cn(
+                                "bg-card rounded-lg border p-4",
+                                todayLoad.level === "high" &&
+                                    "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
+                                todayLoad.level === "medium" &&
+                                    "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20",
+                                todayLoad.level === "low" && "border-border",
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={cn(
+                                        "p-2 rounded-full",
+                                        todayLoad.level === "high" &&
+                                            "bg-orange-500/10",
+                                        todayLoad.level === "medium" &&
+                                            "bg-yellow-500/10",
+                                        todayLoad.level === "low" && "bg-muted",
+                                    )}
+                                >
+                                    <TrendingUp
+                                        className={cn(
+                                            "h-5 w-5",
+                                            todayLoad.level === "high" &&
+                                                "text-orange-500",
+                                            todayLoad.level === "medium" &&
+                                                "text-yellow-500",
+                                            todayLoad.level === "low" &&
+                                                "text-muted-foreground",
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Carga de hoy
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {todayLoad.level === "high" && "Alta"}
+                                        {todayLoad.level === "medium" &&
+                                            "Media"}
+                                        {todayLoad.level === "low" &&
+                                            (todayLoad.count > 0
+                                                ? "Baja"
+                                                : "Sin tareas")}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Estado del día */}
+                        <div
+                            className={cn(
+                                "bg-card rounded-lg border p-4",
+                                todayStatus.status === "completed" &&
+                                    "border-green-500/50 bg-green-50/50 dark:bg-green-950/20",
+                                todayStatus.status === "in_progress" &&
+                                    "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20",
+                                todayStatus.status === "pending" &&
+                                    "border-border",
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={cn(
+                                        "p-2 rounded-full",
+                                        todayStatus.status === "completed" &&
+                                            "bg-green-500/10",
+                                        todayStatus.status === "in_progress" &&
+                                            "bg-blue-500/10",
+                                        todayStatus.status === "pending" &&
+                                            "bg-muted",
+                                    )}
+                                >
+                                    <CheckCircle
+                                        className={cn(
+                                            "h-5 w-5",
+                                            todayStatus.status ===
+                                                "completed" && "text-green-500",
+                                            todayStatus.status ===
+                                                "in_progress" &&
+                                                "text-blue-500",
+                                            todayStatus.status === "pending" &&
+                                                "text-muted-foreground",
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Estado de hoy
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {todayStatus.status === "completed" &&
+                                            "Completado"}
+                                        {todayStatus.status === "in_progress" &&
+                                            `${todayStatus.count} en curso`}
+                                        {todayStatus.status === "pending" &&
+                                            `${todayStatus.count} pendiente${todayStatus.count !== 1 ? "s" : ""}`}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contenedor principal */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Calendario */}
+                        <div className="bg-card rounded-lg border border-border p-6 lg:col-span-2">
+                            {/* Controles de navegación */}
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-semibold">
+                                    {MONTHS[currentDate.getMonth()]}{" "}
+                                    {currentDate.getFullYear()}
+                                </h2>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={previousMonth}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={nextMonth}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Días de la semana */}
+                            <div className="grid grid-cols-7 gap-2 mb-2">
+                                {DAYS.map((day) => (
+                                    <div
+                                        key={day}
+                                        className="text-center text-sm font-medium text-muted-foreground py-2"
+                                    >
+                                        {day}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Días del mes */}
+                            <div className="grid grid-cols-7 gap-2">
+                                {calendarDays.map((date, index) => {
+                                    if (!date) {
+                                        return (
+                                            <div
+                                                key={`empty-${index}`}
+                                                className="aspect-square"
+                                            />
+                                        );
+                                    }
+
+                                    const taskCounts =
+                                        getTaskCountsByPriority(date);
+                                    const hasTasks =
+                                        Object.keys(taskCounts).length > 0;
+                                    const totalTasks = Object.values(
+                                        taskCounts,
+                                    ).reduce((sum, count) => sum + count, 0);
+                                    const highestPriority =
+                                        getHighestPriority(date);
+
                                     return (
-                                        <div
-                                            key={`empty-${index}`}
-                                            className="aspect-square"
+                                        <CalendarDay
+                                            key={date.toISOString()}
+                                            date={date}
+                                            isToday={isToday(date)}
+                                            isSelected={isSelected(date)}
+                                            hasTasks={hasTasks}
+                                            totalTasks={totalTasks}
+                                            highestPriority={highestPriority}
+                                            taskCounts={taskCounts}
+                                            onClick={() =>
+                                                setSelectedDate(date)
+                                            }
                                         />
                                     );
-                                }
+                                })}
+                            </div>
+                        </div>
+                        {/* Panel de tareas del día seleccionado */}
+                        <div className="bg-card rounded-lg border border-border p-6">
+                            {selectedDate ? (
+                                <>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-semibold">
+                                            Tareas - {selectedDate.getDate()} de{" "}
+                                            {MONTHS[selectedDate.getMonth()]}
+                                        </h3>
+                                    </div>
 
-                                const taskCounts =
-                                    getTaskCountsByPriority(date);
-                                const hasTasks =
-                                    Object.keys(taskCounts).length > 0;
-                                const totalTasks = Object.values(
-                                    taskCounts,
-                                ).reduce((sum, count) => sum + count, 0);
-                                const highestPriority =
-                                    getHighestPriority(date);
+                                    {selectedDayTasks.length === 0 && (
+                                        <p className="text-muted-foreground text-sm text-center py-8">
+                                            No hay tareas para este día
+                                        </p>
+                                    )}
 
-                                return (
-                                    <button
-                                        key={date.toISOString()}
-                                        onClick={() => setSelectedDate(date)}
-                                        className={cn(
-                                            "aspect-square rounded-lg border transition-all hover:border-primary hover:shadow-sm relative p-2",
-                                            isToday(date) &&
-                                                "border-primary border-2 font-bold",
-                                            isSelected(date) &&
-                                                "bg-primary text-primary-foreground",
-                                            !isSelected(date) &&
-                                                "bg-background hover:bg-accent",
-                                            // Borde con color de prioridad más alta en mobile
-                                            hasTasks &&
-                                                highestPriority &&
-                                                !isSelected(date) &&
-                                                !isToday(date) &&
-                                                "md:border md:border-border border-l-4",
-                                            hasTasks &&
-                                                highestPriority === "urgent" &&
-                                                !isSelected(date) &&
-                                                !isToday(date) &&
-                                                "border-l-red-500",
-                                            hasTasks &&
-                                                highestPriority === "high" &&
-                                                !isSelected(date) &&
-                                                !isToday(date) &&
-                                                "border-l-orange-500",
-                                            hasTasks &&
-                                                highestPriority === "medium" &&
-                                                !isSelected(date) &&
-                                                !isToday(date) &&
-                                                "border-l-yellow-500",
-                                            hasTasks &&
-                                                highestPriority === "low" &&
-                                                !isSelected(date) &&
-                                                !isToday(date) &&
-                                                "border-l-blue-500",
-                                        )}
-                                    >
-                                        <div className="flex flex-col h-full">
-                                            <div className="flex items-start justify-between">
-                                                <span className="text-sm">
-                                                    {date.getDate()}
-                                                </span>
-                                                {/* Badge mobile con total de tareas */}
-                                                {hasTasks && (
-                                                    <span
-                                                        className={cn(
-                                                            "md:hidden text-[7px] font-bold min-w-[12px] h-[12px] px-0.5 rounded-full flex items-center justify-center",
-                                                            highestPriority ===
-                                                                "urgent" &&
-                                                                "bg-red-500 text-white",
-                                                            highestPriority ===
-                                                                "high" &&
-                                                                "bg-orange-500 text-white",
-                                                            highestPriority ===
-                                                                "medium" &&
-                                                                "bg-yellow-500 text-white",
-                                                            highestPriority ===
-                                                                "low" &&
-                                                                "bg-blue-500 text-white",
-                                                        )}
-                                                    >
-                                                        {totalTasks}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {/* Indicadores desktop con prioridades detalladas */}
-                                            {hasTasks && (
-                                                <div className="hidden md:flex flex-wrap gap-0.5 mt-auto">
-                                                    {Object.entries(
-                                                        taskCounts,
-                                                    ).map(
-                                                        ([priority, count]) => (
-                                                            <div
-                                                                key={priority}
-                                                                className="flex items-center gap-0.5"
-                                                            >
-                                                                <div
-                                                                    className={cn(
-                                                                        "w-1.5 h-1.5 rounded-full",
-                                                                        priorityColors[
-                                                                            priority as keyof typeof priorityColors
-                                                                        ],
-                                                                    )}
-                                                                />
-                                                                <span className="text-[10px]">
-                                                                    {count}
-                                                                </span>
-                                                            </div>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            )}
+                                    {selectedDayTasks.length > 0 && (
+                                        <div className="space-y-3">
+                                            {selectedDayTasks.map((task) => (
+                                                <DraggableTask
+                                                    key={task.id}
+                                                    task={task}
+                                                    onClick={() =>
+                                                        handleTaskClick(task)
+                                                    }
+                                                />
+                                            ))}
                                         </div>
-                                    </button>
-                                );
-                            })}
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>Selecciona un día para ver las tareas</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    {/* Panel de tareas del día seleccionado */}
-                    <div className="bg-card rounded-lg border border-border p-6">
-                        {selectedDate ? (
-                            <>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-semibold">
-                                        Tareas - {selectedDate.getDate()} de{" "}
-                                        {MONTHS[selectedDate.getMonth()]}
-                                    </h3>
+
+                    {/* Tareas sin fecha de vencimiento */}
+                    {tasksWithoutDueDate.length > 0 && (
+                        <div className="bg-card rounded-lg border border-border p-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                <h2 className="text-xl font-semibold flex items-center gap-2">
+                                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                                    Tareas sin fecha de vencimiento
+                                    <span className="text-sm font-normal text-muted-foreground">
+                                        ({filteredTasksWithoutDueDate.length}/
+                                        {tasksWithoutDueDate.length})
+                                    </span>
+                                </h2>
+                            </div>
+
+                            {/* Filtros */}
+                            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                                {/* Búsqueda */}
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar por título o descripción..."
+                                        value={searchQuery}
+                                        onChange={(e) =>
+                                            setSearchQuery(e.target.value)
+                                        }
+                                        className="pl-9"
+                                    />
                                 </div>
 
-                                {selectedDayTasks.length === 0 && (
-                                    <p className="text-muted-foreground text-sm text-center py-8">
-                                        No hay tareas para este día
+                                {/* Filtro de prioridad */}
+                                <Select
+                                    value={priorityFilter}
+                                    onValueChange={setPriorityFilter}
+                                >
+                                    <SelectTrigger className="w-full sm:w-[180px]">
+                                        <SelectValue placeholder="Prioridad" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Todas las prioridades
+                                        </SelectItem>
+                                        <SelectItem value="low">
+                                            Baja
+                                        </SelectItem>
+                                        <SelectItem value="medium">
+                                            Media
+                                        </SelectItem>
+                                        <SelectItem value="high">
+                                            Alta
+                                        </SelectItem>
+                                        <SelectItem value="urgent">
+                                            Urgente
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Filtro de estado */}
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={setStatusFilter}
+                                >
+                                    <SelectTrigger className="w-full sm:w-[180px]">
+                                        <SelectValue placeholder="Estado" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Todos los estados
+                                        </SelectItem>
+                                        <SelectItem value="pending">
+                                            Pendiente
+                                        </SelectItem>
+                                        <SelectItem value="in_progress">
+                                            En progreso
+                                        </SelectItem>
+                                        <SelectItem value="completed">
+                                            Completada
+                                        </SelectItem>
+                                        <SelectItem value="cancelled">
+                                            Cancelada
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Lista de tareas filtradas */}
+                            {filteredTasksWithoutDueDate.length === 0 ? (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>
+                                        No se encontraron tareas con los filtros
+                                        aplicados
                                     </p>
-                                )}
-
-                                {selectedDayTasks.length > 0 && (
-                                    <div className="space-y-3">
-                                        {selectedDayTasks.map((task) => (
-                                            <button
-                                                key={task.id}
-                                                onClick={() =>
-                                                    handleTaskClick(task)
-                                                }
-                                                className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-                                            >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-medium text-sm truncate">
-                                                            {task.title}
-                                                        </h4>
-                                                        {task.description && (
-                                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                                                {
-                                                                    task.description
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className={cn(
-                                                            "w-2 h-2 rounded-full flex-shrink-0 mt-1",
-                                                            priorityColors[
-                                                                task.priority
-                                                            ],
-                                                        )}
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <span
-                                                        className={cn(
-                                                            "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                            task.priority ===
-                                                                "low" &&
-                                                                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                            task.priority ===
-                                                                "medium" &&
-                                                                "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-                                                            task.priority ===
-                                                                "high" &&
-                                                                "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-                                                            task.priority ===
-                                                                "urgent" &&
-                                                                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-                                                        )}
-                                                    >
-                                                        {
-                                                            priorityLabels[
-                                                                task.priority
-                                                            ]
-                                                        }
-                                                    </span>
-                                                    {task.status !==
-                                                        "pending" && (
-                                                        <span
-                                                            className={cn(
-                                                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                                task.status ===
-                                                                    "completed" &&
-                                                                    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-                                                                task.status ===
-                                                                    "in_progress" &&
-                                                                    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                                task.status ===
-                                                                    "cancelled" &&
-                                                                    "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
-                                                            )}
-                                                        >
-                                                            {task.status ===
-                                                                "completed" &&
-                                                                "Completada"}
-                                                            {task.status ===
-                                                                "in_progress" &&
-                                                                "En progreso"}
-                                                            {task.status ===
-                                                                "cancelled" &&
-                                                                "Cancelada"}
-                                                        </span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {filteredTasksWithoutDueDate.map((task) => (
+                                        <button
+                                            key={task.id}
+                                            onClick={() =>
+                                                handleTaskClick(task)
+                                            }
+                                            className="text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <h4 className="font-medium text-sm truncate flex-1">
+                                                    {task.title}
+                                                </h4>
+                                                <div
+                                                    className={cn(
+                                                        "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                                                        priorityColors[
+                                                            task.priority
+                                                        ],
                                                     )}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>Selecciona un día para ver las tareas</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Tareas sin fecha de vencimiento */}
-                {tasksWithoutDueDate.length > 0 && (
-                    <div className="bg-card rounded-lg border border-border p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
-                                <Calendar className="h-5 w-5 text-muted-foreground" />
-                                Tareas sin fecha de vencimiento
-                                <span className="text-sm font-normal text-muted-foreground">
-                                    ({filteredTasksWithoutDueDate.length}/
-                                    {tasksWithoutDueDate.length})
-                                </span>
-                            </h2>
-                        </div>
-
-                        {/* Filtros */}
-                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                            {/* Búsqueda */}
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar por título o descripción..."
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    className="pl-9"
-                                />
-                            </div>
-
-                            {/* Filtro de prioridad */}
-                            <Select
-                                value={priorityFilter}
-                                onValueChange={setPriorityFilter}
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Prioridad" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Todas las prioridades
-                                    </SelectItem>
-                                    <SelectItem value="low">Baja</SelectItem>
-                                    <SelectItem value="medium">
-                                        Media
-                                    </SelectItem>
-                                    <SelectItem value="high">Alta</SelectItem>
-                                    <SelectItem value="urgent">
-                                        Urgente
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {/* Filtro de estado */}
-                            <Select
-                                value={statusFilter}
-                                onValueChange={setStatusFilter}
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Todos los estados
-                                    </SelectItem>
-                                    <SelectItem value="pending">
-                                        Pendiente
-                                    </SelectItem>
-                                    <SelectItem value="in_progress">
-                                        En progreso
-                                    </SelectItem>
-                                    <SelectItem value="completed">
-                                        Completada
-                                    </SelectItem>
-                                    <SelectItem value="cancelled">
-                                        Cancelada
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Lista de tareas filtradas */}
-                        {filteredTasksWithoutDueDate.length === 0 ? (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>
-                                    No se encontraron tareas con los filtros
-                                    aplicados
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {filteredTasksWithoutDueDate.map((task) => (
-                                    <button
-                                        key={task.id}
-                                        onClick={() => handleTaskClick(task)}
-                                        className="text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <h4 className="font-medium text-sm truncate flex-1">
-                                                {task.title}
-                                            </h4>
-                                            <div
-                                                className={cn(
-                                                    "w-2 h-2 rounded-full flex-shrink-0 mt-1",
-                                                    priorityColors[
-                                                        task.priority
-                                                    ],
-                                                )}
-                                            />
-                                        </div>
-                                        {task.description && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                                                {task.description}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span
-                                                className={cn(
-                                                    "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                    task.priority === "low" &&
-                                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                    task.priority ===
-                                                        "medium" &&
-                                                        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-                                                    task.priority === "high" &&
-                                                        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-                                                    task.priority ===
-                                                        "urgent" &&
-                                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-                                                )}
-                                            >
-                                                {priorityLabels[task.priority]}
-                                            </span>
-                                            {task.status !== "pending" && (
+                                                />
+                                            </div>
+                                            {task.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                                    {task.description}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <span
                                                     className={cn(
                                                         "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                        task.status ===
-                                                            "completed" &&
-                                                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-                                                        task.status ===
-                                                            "in_progress" &&
+                                                        task.priority ===
+                                                            "low" &&
                                                             "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                        task.status ===
-                                                            "cancelled" &&
-                                                            "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                                        task.priority ===
+                                                            "medium" &&
+                                                            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+                                                        task.priority ===
+                                                            "high" &&
+                                                            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+                                                        task.priority ===
+                                                            "urgent" &&
+                                                            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
                                                     )}
                                                 >
-                                                    {task.status ===
-                                                        "completed" &&
-                                                        "Completada"}
-                                                    {task.status ===
-                                                        "in_progress" &&
-                                                        "En progreso"}
-                                                    {task.status ===
-                                                        "cancelled" &&
-                                                        "Cancelada"}
+                                                    {
+                                                        priorityLabels[
+                                                            task.priority
+                                                        ]
+                                                    }
                                                 </span>
-                                            )}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Dialog de detalles de tarea */}
-            <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Detalles de la tarea</DialogTitle>
-                        <DialogDescription>
-                            Ver información y cambiar el estado de la tarea
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {selectedTask && (
-                        <div className="space-y-6">
-                            {/* Título */}
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Título
-                                </label>
-                                <p className="mt-1 text-base font-semibold">
-                                    {selectedTask.title}
-                                </p>
-                            </div>
-
-                            {/* Descripción */}
-                            {selectedTask.description && (
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">
-                                        Descripción
-                                    </label>
-                                    <p className="mt-1 text-sm">
-                                        {selectedTask.description}
-                                    </p>
+                                                {task.status !== "pending" && (
+                                                    <span
+                                                        className={cn(
+                                                            "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                                            task.status ===
+                                                                "completed" &&
+                                                                "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                                                            task.status ===
+                                                                "in_progress" &&
+                                                                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                                            task.status ===
+                                                                "cancelled" &&
+                                                                "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                                        )}
+                                                    >
+                                                        {task.status ===
+                                                            "completed" &&
+                                                            "Completada"}
+                                                        {task.status ===
+                                                            "in_progress" &&
+                                                            "En progreso"}
+                                                        {task.status ===
+                                                            "cancelled" &&
+                                                            "Cancelada"}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
                             )}
-
-                            {/* Prioridad */}
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Prioridad
-                                </label>
-                                <div className="mt-1 flex items-center gap-2">
-                                    <div
-                                        className={cn(
-                                            "w-3 h-3 rounded-full",
-                                            priorityColors[
-                                                selectedTask.priority
-                                            ],
-                                        )}
-                                    />
-                                    <span className="text-sm font-medium">
-                                        {priorityLabels[selectedTask.priority]}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Fecha de vencimiento */}
-                            {selectedTask.dueDate && (
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                                        <Calendar className="w-4 h-4" />
-                                        Fecha de vencimiento
-                                    </label>
-                                    <p className="mt-1 text-sm">
-                                        {new Date(
-                                            selectedTask.dueDate,
-                                        ).toLocaleDateString("es-ES", {
-                                            day: "numeric",
-                                            month: "long",
-                                            year: "numeric",
-                                        })}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Estado actual */}
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Estado actual
-                                </label>
-                                <span
-                                    className={cn(
-                                        "mt-1 inline-block text-xs px-3 py-1 rounded-full font-medium",
-                                        selectedTask.status === "pending" &&
-                                            "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
-                                        selectedTask.status === "completed" &&
-                                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-                                        selectedTask.status === "in_progress" &&
-                                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                        selectedTask.status === "cancelled" &&
-                                            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-                                    )}
-                                >
-                                    {selectedTask.status === "pending" &&
-                                        "Pendiente"}
-                                    {selectedTask.status === "completed" &&
-                                        "Completada"}
-                                    {selectedTask.status === "in_progress" &&
-                                        "En progreso"}
-                                    {selectedTask.status === "cancelled" &&
-                                        "Cancelada"}
-                                </span>
-                            </div>
-
-                            {/* Cambiar estado */}
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                    Cambiar estado
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Button
-                                        variant={
-                                            selectedTask.status === "pending"
-                                                ? "default"
-                                                : "outline"
-                                        }
-                                        size="sm"
-                                        onClick={() =>
-                                            handleStatusChange("pending")
-                                        }
-                                        className="w-full"
-                                    >
-                                        Pendiente
-                                    </Button>
-                                    <Button
-                                        variant={
-                                            selectedTask.status ===
-                                            "in_progress"
-                                                ? "default"
-                                                : "outline"
-                                        }
-                                        size="sm"
-                                        onClick={() =>
-                                            handleStatusChange("in_progress")
-                                        }
-                                        className="w-full"
-                                    >
-                                        En progreso
-                                    </Button>
-                                    <Button
-                                        variant={
-                                            selectedTask.status === "completed"
-                                                ? "default"
-                                                : "outline"
-                                        }
-                                        size="sm"
-                                        onClick={() =>
-                                            handleStatusChange("completed")
-                                        }
-                                        className="w-full"
-                                    >
-                                        Completada
-                                    </Button>
-                                    <Button
-                                        variant={
-                                            selectedTask.status === "cancelled"
-                                                ? "default"
-                                                : "outline"
-                                        }
-                                        size="sm"
-                                        onClick={() =>
-                                            handleStatusChange("cancelled")
-                                        }
-                                        className="w-full"
-                                    >
-                                        Cancelada
-                                    </Button>
-                                </div>
-                            </div>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
+                </div>
+
+                {/* Dialog de detalles de tarea */}
+                <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Detalles de la tarea</DialogTitle>
+                            <DialogDescription>
+                                Ver información y cambiar el estado de la tarea
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {selectedTask && (
+                            <div className="space-y-6">
+                                {/* Título */}
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Título
+                                    </label>
+                                    <p className="mt-1 text-base font-semibold">
+                                        {selectedTask.title}
+                                    </p>
+                                </div>
+
+                                {/* Descripción */}
+                                {selectedTask.description && (
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">
+                                            Descripción
+                                        </label>
+                                        <p className="mt-1 text-sm">
+                                            {selectedTask.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Prioridad */}
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Prioridad
+                                    </label>
+                                    <div className="mt-1 flex items-center gap-2">
+                                        <div
+                                            className={cn(
+                                                "w-3 h-3 rounded-full",
+                                                priorityColors[
+                                                    selectedTask.priority
+                                                ],
+                                            )}
+                                        />
+                                        <span className="text-sm font-medium">
+                                            {
+                                                priorityLabels[
+                                                    selectedTask.priority
+                                                ]
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Fecha de vencimiento */}
+                                {selectedTask.dueDate && (
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                                            <Calendar className="w-4 h-4" />
+                                            Fecha de vencimiento
+                                        </label>
+                                        <p className="mt-1 text-sm">
+                                            {new Date(
+                                                selectedTask.dueDate,
+                                            ).toLocaleDateString("es-ES", {
+                                                day: "numeric",
+                                                month: "long",
+                                                year: "numeric",
+                                            })}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Estado actual */}
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Estado actual
+                                    </label>
+                                    <span
+                                        className={cn(
+                                            "mt-1 inline-block text-xs px-3 py-1 rounded-full font-medium",
+                                            selectedTask.status === "pending" &&
+                                                "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                            selectedTask.status ===
+                                                "completed" &&
+                                                "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                                            selectedTask.status ===
+                                                "in_progress" &&
+                                                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                            selectedTask.status ===
+                                                "cancelled" &&
+                                                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                                        )}
+                                    >
+                                        {selectedTask.status === "pending" &&
+                                            "Pendiente"}
+                                        {selectedTask.status === "completed" &&
+                                            "Completada"}
+                                        {selectedTask.status ===
+                                            "in_progress" && "En progreso"}
+                                        {selectedTask.status === "cancelled" &&
+                                            "Cancelada"}
+                                    </span>
+                                </div>
+
+                                {/* Cambiar estado */}
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                                        Cambiar estado
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            variant={
+                                                selectedTask.status ===
+                                                "pending"
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                handleStatusChange("pending")
+                                            }
+                                            className="w-full"
+                                        >
+                                            Pendiente
+                                        </Button>
+                                        <Button
+                                            variant={
+                                                selectedTask.status ===
+                                                "in_progress"
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                handleStatusChange(
+                                                    "in_progress",
+                                                )
+                                            }
+                                            className="w-full"
+                                        >
+                                            En progreso
+                                        </Button>
+                                        <Button
+                                            variant={
+                                                selectedTask.status ===
+                                                "completed"
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                handleStatusChange("completed")
+                                            }
+                                            className="w-full"
+                                        >
+                                            Completada
+                                        </Button>
+                                        <Button
+                                            variant={
+                                                selectedTask.status ===
+                                                "cancelled"
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            size="sm"
+                                            onClick={() =>
+                                                handleStatusChange("cancelled")
+                                            }
+                                            className="w-full"
+                                        >
+                                            Cancelada
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* DragOverlay para mostrar la tarea mientras se arrastra */}
+                <DragOverlay>
+                    {activeId &&
+                        (() => {
+                            const task = tasks?.find(
+                                (t) => `calendar-task-${t.id}` === activeId,
+                            );
+                            if (!task) return null;
+                            return (
+                                <div className="p-3 rounded-lg border border-border bg-card shadow-lg cursor-grabbing opacity-90">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-sm truncate">
+                                                {task.title}
+                                            </h4>
+                                        </div>
+                                        <div
+                                            className={cn(
+                                                "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                                                priorityColors[task.priority],
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                </DragOverlay>
+            </DndContext>
         </MainLayout>
     );
 }
