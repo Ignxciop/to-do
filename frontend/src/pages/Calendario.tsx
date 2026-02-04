@@ -41,6 +41,18 @@ export default function Calendario() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
+    // Debug: ver cuántas tareas hay y si tienen dueDate
+    console.log("Total tasks:", tasks.length);
+    console.log("Tasks with dueDate:", tasks.filter((t) => t.dueDate).length);
+    console.log(
+        "Sample tasks:",
+        tasks.slice(0, 3).map((t) => ({
+            title: t.title,
+            dueDate: t.dueDate,
+            dueDateType: typeof t.dueDate,
+        })),
+    );
+
     // Obtener el primer y último día del mes actual
     const firstDayOfMonth = new Date(
         currentDate.getFullYear(),
@@ -127,7 +139,7 @@ export default function Calendario() {
 
     const goToToday = () => {
         setCurrentDate(new Date());
-        setSelectedDate(new Date());
+        setSelectedDate(null);
     };
 
     // Verificar si una fecha es hoy
@@ -184,7 +196,12 @@ export default function Calendario() {
                 {/* Contenedor principal */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Calendario */}
-                    <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6">
+                    <div
+                        className={cn(
+                            "bg-card rounded-lg border border-border p-6",
+                            selectedDate ? "lg:col-span-2" : "lg:col-span-3",
+                        )}
+                    >
                         {/* Controles de navegación */}
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-semibold">
@@ -288,98 +305,126 @@ export default function Calendario() {
                             })}
                         </div>
                     </div>
-
                     {/* Panel de tareas del día seleccionado */}
-                    <div className="bg-card rounded-lg border border-border p-6">
-                        <h3 className="text-xl font-semibold mb-4">
-                            {selectedDate
-                                ? `Tareas - ${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`
-                                : "Selecciona un día"}
-                        </h3>
-
-                        {selectedDate && selectedDayTasks.length === 0 && (
-                            <p className="text-muted-foreground text-sm text-center py-8">
-                                No hay tareas para este día
-                            </p>
-                        )}
-
-                        {selectedDate && selectedDayTasks.length > 0 && (
-                            <div className="space-y-3">
-                                {selectedDayTasks.map((task) => (
-                                    <div
-                                        key={task.id}
-                                        className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    {selectedDate && (
+                        <div className="bg-card rounded-lg border border-border p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold">
+                                    Tareas - {selectedDate.getDate()} de{" "}
+                                    {MONTHS[selectedDate.getMonth()]}
+                                </h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSelectedDate(null)}
+                                    className="h-8 w-8"
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-medium text-sm truncate">
-                                                    {task.title}
-                                                </h4>
-                                                {task.description && (
-                                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                                        {task.description}
-                                                    </p>
-                                                )}
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </Button>
+                            </div>
+
+                            {selectedDayTasks.length === 0 && (
+                                <p className="text-muted-foreground text-sm text-center py-8">
+                                    No hay tareas para este día
+                                </p>
+                            )}
+
+                            {selectedDayTasks.length > 0 && (
+                                <div className="space-y-3">
+                                    {selectedDayTasks.map((task) => (
+                                        <div
+                                            key={task.id}
+                                            className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-medium text-sm truncate">
+                                                        {task.title}
+                                                    </h4>
+                                                    {task.description && (
+                                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                                            {task.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className={cn(
+                                                        "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                                                        priorityColors[
+                                                            task.priority
+                                                        ],
+                                                    )}
+                                                />
                                             </div>
-                                            <div
-                                                className={cn(
-                                                    "w-2 h-2 rounded-full flex-shrink-0 mt-1",
-                                                    priorityColors[
-                                                        task.priority
-                                                    ],
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span
-                                                className={cn(
-                                                    "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                    task.priority === "low" &&
-                                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                    task.priority ===
-                                                        "medium" &&
-                                                        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-                                                    task.priority === "high" &&
-                                                        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-                                                    task.priority ===
-                                                        "urgent" &&
-                                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-                                                )}
-                                            >
-                                                {priorityLabels[task.priority]}
-                                            </span>
-                                            {task.status !== "pending" && (
+                                            <div className="flex items-center gap-2 mt-2">
                                                 <span
                                                     className={cn(
                                                         "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                        task.status ===
-                                                            "completed" &&
-                                                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-                                                        task.status ===
-                                                            "in_progress" &&
+                                                        task.priority ===
+                                                            "low" &&
                                                             "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                                        task.status ===
-                                                            "cancelled" &&
-                                                            "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                                        task.priority ===
+                                                            "medium" &&
+                                                            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+                                                        task.priority ===
+                                                            "high" &&
+                                                            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+                                                        task.priority ===
+                                                            "urgent" &&
+                                                            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
                                                     )}
                                                 >
-                                                    {task.status ===
-                                                        "completed" &&
-                                                        "Completada"}
-                                                    {task.status ===
-                                                        "in_progress" &&
-                                                        "En progreso"}
-                                                    {task.status ===
-                                                        "cancelled" &&
-                                                        "Cancelada"}
+                                                    {
+                                                        priorityLabels[
+                                                            task.priority
+                                                        ]
+                                                    }
                                                 </span>
-                                            )}
+                                                {task.status !== "pending" && (
+                                                    <span
+                                                        className={cn(
+                                                            "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                                            task.status ===
+                                                                "completed" &&
+                                                                "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                                                            task.status ===
+                                                                "in_progress" &&
+                                                                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                                            task.status ===
+                                                                "cancelled" &&
+                                                                "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                                        )}
+                                                    >
+                                                        {task.status ===
+                                                            "completed" &&
+                                                            "Completada"}
+                                                        {task.status ===
+                                                            "in_progress" &&
+                                                            "En progreso"}
+                                                        {task.status ===
+                                                            "cancelled" &&
+                                                            "Cancelada"}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}{" "}
                 </div>
             </div>
         </MainLayout>
