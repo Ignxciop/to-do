@@ -14,7 +14,7 @@ const Dashboard = () => {
     if (loading) return null;
     if (!user) return null;
     return (
-        <MainLayout>
+        <MainLayout title="Dashboard">
             <div className="max-w-2xl mx-auto">
                 <h1 className="text-3xl font-bold mb-4">
                     Bienvenido, {user?.name || "Usuario"}

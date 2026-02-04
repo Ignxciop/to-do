@@ -147,7 +147,7 @@ export function FolderCard({
             {/* Header de la carpeta */}
             <div
                 className={cn(
-                    "flex items-center justify-between p-4",
+                    "flex items-center justify-between p-4 select-none",
                     !isSubfolder && "cursor-move",
                 )}
                 {...attributes}

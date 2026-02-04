@@ -186,7 +186,7 @@ export default function Tasks() {
     // Mostrar error si algo falla
     if (foldersError || tasksError) {
         return (
-            <MainLayout>
+            <MainLayout title="Tareas">
                 <div className="flex flex-col items-center justify-center h-96 space-y-4">
                     <p className="text-destructive font-medium">
                         Error al cargar los datos
@@ -207,7 +207,7 @@ export default function Tasks() {
 
     if (foldersLoading || tasksLoading) {
         return (
-            <MainLayout>
+            <MainLayout title="Tareas">
                 <div className="flex items-center justify-center h-96">
                     <p className="text-muted-foreground">Cargando...</p>
                 </div>
@@ -216,7 +216,7 @@ export default function Tasks() {
     }
 
     return (
-        <MainLayout>
+        <MainLayout title="Tareas">
             <DndContext
                 sensors={sensors}
                 onDragStart={handleDragStart}
@@ -225,7 +225,7 @@ export default function Tasks() {
             >
                 <div className="space-y-6 p-6">
                     {/* Header con acciones */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
                                 Tareas
@@ -234,11 +234,12 @@ export default function Tasks() {
                                 Organiza tus tareas en carpetas
                             </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                             <Button
                                 onClick={() => setOpenFolderDialog(true)}
                                 variant="outline"
                                 size="sm"
+                                className="flex-1 sm:flex-none"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Nueva Carpeta
@@ -246,6 +247,7 @@ export default function Tasks() {
                             <Button
                                 onClick={() => setOpenTaskDialog(true)}
                                 size="sm"
+                                className="flex-1 sm:flex-none"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Nueva Tarea

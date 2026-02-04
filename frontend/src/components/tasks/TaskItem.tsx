@@ -79,7 +79,7 @@ export function TaskItem({
                 ref={setNodeRef}
                 style={style}
                 className={cn(
-                    "group flex items-start gap-3 py-3 hover:bg-accent/30 transition-all cursor-move",
+                    "group flex items-start gap-3 py-3 hover:bg-accent/30 transition-all cursor-move select-none",
                     isDragging && "opacity-50 bg-accent/50",
                     task.status === "completed" && "opacity-60",
                     compact && "py-2",

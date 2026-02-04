@@ -5,10 +5,13 @@ import { AppSidebar } from "../components/app-sidebar";
 
 interface MainLayoutProps {
     children: React.ReactNode;
+    title?: string;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
-    const currentLocation = "Dashboard";
+export default function MainLayout({
+    children,
+    title = "Dashboard",
+}: MainLayoutProps) {
     const isMobile = useIsMobile();
     return (
         <SidebarProvider>
@@ -20,7 +23,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                             <header className="flex items-center gap-2 mb-6 border-b border-border pb-2">
                                 <SidebarTrigger />
                                 <span className="text-lg font-semibold">
-                                    {currentLocation}
+                                    {title}
                                 </span>
                             </header>
                             <div className="flex-1 w-full">{children}</div>
@@ -31,7 +34,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                                 <header className="flex items-center gap-2 mb-6 border-b border-border pb-2">
                                     <SidebarTrigger />
                                     <span className="text-lg font-semibold">
-                                        {currentLocation}
+                                        {title}
                                     </span>
                                 </header>
                                 <div className="flex-1 w-full">{children}</div>
