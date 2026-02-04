@@ -13,9 +13,21 @@ const PORT = config.port || 3000;
 app.use(helmet());
 app.use(cookieParser());
 
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    "https://tasks.josenunez.cl",
+].filter(Boolean);
+
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL,
+        origin: (origin, callback) => {
+            // Permitir peticiones sin origin (como desde Postman o desde el mismo servidor)
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         methods: ["GET", "POST", "PUT", "DELETE"],
         credentials: true,
     }),
