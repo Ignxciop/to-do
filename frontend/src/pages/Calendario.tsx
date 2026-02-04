@@ -1,6 +1,22 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    Calendar,
+    AlertTriangle,
+    TrendingUp,
+    CheckCircle,
+    Search,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/ui/select";
 import { useTasks } from "../hooks/useTasks";
 import type { Task } from "../hooks/useTasks";
 import MainLayout from "../layout/MainLayout";
@@ -50,6 +66,11 @@ export default function Calendario() {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [showTaskDialog, setShowTaskDialog] = useState(false);
 
+    // Filtros para tareas sin fecha
+    const [searchQuery, setSearchQuery] = useState("");
+    const [priorityFilter, setPriorityFilter] = useState<string>("all");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+
     // Obtener el primer y último día del mes actual
     const firstDayOfMonth = new Date(
         currentDate.getFullYear(),
@@ -86,26 +107,51 @@ export default function Calendario() {
         return days;
     }, [currentDate, startDay, daysInMonth]);
 
-    // Función para obtener tareas de un día específico
+    // Función para obtener tareas de un día específico (con dueDate)
     const getTasksForDay = (date: Date): Task[] => {
         if (!date) return [];
         return tasks.filter((task) => {
-            // Usar createdAt para mostrar tareas en el calendario
-            const taskDate = new Date(task.createdAt);
-            // Normalizar ambas fechas a medianoche para comparación
-            const normalizedTaskDate = new Date(
-                taskDate.getFullYear(),
-                taskDate.getMonth(),
-                taskDate.getDate(),
+            if (!task.dueDate) return false;
+            // Extraer solo la fecha sin considerar zona horaria
+            // Si dueDate viene como "2026-02-04T00:00:00.000Z", extraemos "2026-02-04"
+            const dueDateStr = task.dueDate.split("T")[0];
+            const [year, month, day] = dueDateStr.split("-").map(Number);
+
+            // Comparar con la fecha del calendario
+            return (
+                year === date.getFullYear() &&
+                month === date.getMonth() + 1 && // getMonth() es 0-indexed
+                day === date.getDate()
             );
-            const normalizedDate = new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                date.getDate(),
-            );
-            return normalizedTaskDate.getTime() === normalizedDate.getTime();
         });
     };
+
+    // Obtener tareas sin fecha de vencimiento
+    const tasksWithoutDueDate = tasks.filter((task) => !task.dueDate);
+
+    // Filtrar tareas sin fecha según criterios
+    const filteredTasksWithoutDueDate = useMemo(() => {
+        return tasksWithoutDueDate.filter((task) => {
+            // Filtro de búsqueda
+            const matchesSearch =
+                searchQuery === "" ||
+                task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (task.description
+                    ?.toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ??
+                    false);
+
+            // Filtro de prioridad
+            const matchesPriority =
+                priorityFilter === "all" || task.priority === priorityFilter;
+
+            // Filtro de estado
+            const matchesStatus =
+                statusFilter === "all" || task.status === statusFilter;
+
+            return matchesSearch && matchesPriority && matchesStatus;
+        });
+    }, [tasksWithoutDueDate, searchQuery, priorityFilter, statusFilter]);
 
     // Función para contar tareas por prioridad en un día
     const getTaskCountsByPriority = (date: Date): Record<string, number> => {
@@ -177,6 +223,75 @@ export default function Calendario() {
 
     const selectedDayTasks = selectedDate ? getTasksForDay(selectedDate) : [];
 
+    // Funciones para vista rápida
+    // Obtener tareas atrasadas
+    const getOverdueTasks = (): Task[] => {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+        return tasks.filter((task) => {
+            if (
+                !task.dueDate ||
+                task.status === "completed" ||
+                task.status === "cancelled"
+            )
+                return false;
+
+            // Extraer solo la fecha sin zona horaria
+            const dueDateStr = task.dueDate.split("T")[0];
+            return dueDateStr < todayStr;
+        });
+    };
+
+    // Calcular carga del día de hoy
+    const getTodayLoad = (): {
+        level: "low" | "medium" | "high";
+        count: number;
+    } => {
+        const today = new Date();
+        const todayTasks = getTasksForDay(today).filter(
+            (task) =>
+                task.status !== "completed" && task.status !== "cancelled",
+        );
+        const count = todayTasks.length;
+
+        // Calcular peso de prioridades
+        const weight = todayTasks.reduce((acc, task) => {
+            const weights = { low: 1, medium: 2, high: 3, urgent: 4 };
+            return acc + weights[task.priority];
+        }, 0);
+
+        if (count === 0) return { level: "low", count: 0 };
+        if (count <= 2 || weight <= 4) return { level: "low", count };
+        if (count <= 5 || weight <= 10) return { level: "medium", count };
+        return { level: "high", count };
+    };
+
+    // Obtener estado del día
+    const getTodayStatus = (): {
+        status: "completed" | "pending" | "in_progress";
+        count: number;
+    } => {
+        const today = new Date();
+        const todayTasks = getTasksForDay(today);
+        const pendingTasks = todayTasks.filter(
+            (task) =>
+                task.status === "pending" || task.status === "in_progress",
+        );
+
+        if (todayTasks.length === 0) return { status: "completed", count: 0 };
+        if (pendingTasks.length === 0)
+            return { status: "completed", count: todayTasks.length };
+        if (todayTasks.some((task) => task.status === "in_progress")) {
+            return { status: "in_progress", count: pendingTasks.length };
+        }
+        return { status: "pending", count: pendingTasks.length };
+    };
+
+    const overdueTasks = getOverdueTasks();
+    const todayLoad = getTodayLoad();
+    const todayStatus = getTodayStatus();
+
     // Abrir dialog de tarea
     const handleTaskClick = (task: Task) => {
         setSelectedTask(task);
@@ -221,6 +336,155 @@ export default function Calendario() {
                     <Button onClick={goToToday} variant="outline" size="sm">
                         Hoy
                     </Button>
+                </div>
+
+                {/* Vista rápida */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Tareas atrasadas */}
+                    <div
+                        className={cn(
+                            "bg-card rounded-lg border p-4",
+                            overdueTasks.length > 0
+                                ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/20"
+                                : "border-border",
+                        )}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div
+                                className={cn(
+                                    "p-2 rounded-full",
+                                    overdueTasks.length > 0
+                                        ? "bg-red-500/10"
+                                        : "bg-muted",
+                                )}
+                            >
+                                <AlertTriangle
+                                    className={cn(
+                                        "h-5 w-5",
+                                        overdueTasks.length > 0
+                                            ? "text-red-500"
+                                            : "text-muted-foreground",
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Tareas atrasadas
+                                </p>
+                                <p
+                                    className={cn(
+                                        "text-2xl font-bold",
+                                        overdueTasks.length > 0
+                                            ? "text-red-500"
+                                            : "text-foreground",
+                                    )}
+                                >
+                                    {overdueTasks.length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Carga del día */}
+                    <div
+                        className={cn(
+                            "bg-card rounded-lg border p-4",
+                            todayLoad.level === "high" &&
+                                "border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20",
+                            todayLoad.level === "medium" &&
+                                "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20",
+                            todayLoad.level === "low" && "border-border",
+                        )}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div
+                                className={cn(
+                                    "p-2 rounded-full",
+                                    todayLoad.level === "high" &&
+                                        "bg-orange-500/10",
+                                    todayLoad.level === "medium" &&
+                                        "bg-yellow-500/10",
+                                    todayLoad.level === "low" && "bg-muted",
+                                )}
+                            >
+                                <TrendingUp
+                                    className={cn(
+                                        "h-5 w-5",
+                                        todayLoad.level === "high" &&
+                                            "text-orange-500",
+                                        todayLoad.level === "medium" &&
+                                            "text-yellow-500",
+                                        todayLoad.level === "low" &&
+                                            "text-muted-foreground",
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Carga de hoy
+                                </p>
+                                <p className="text-2xl font-bold">
+                                    {todayLoad.level === "high" && "Alta"}
+                                    {todayLoad.level === "medium" && "Media"}
+                                    {todayLoad.level === "low" &&
+                                        (todayLoad.count > 0
+                                            ? "Baja"
+                                            : "Sin tareas")}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Estado del día */}
+                    <div
+                        className={cn(
+                            "bg-card rounded-lg border p-4",
+                            todayStatus.status === "completed" &&
+                                "border-green-500/50 bg-green-50/50 dark:bg-green-950/20",
+                            todayStatus.status === "in_progress" &&
+                                "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20",
+                            todayStatus.status === "pending" && "border-border",
+                        )}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div
+                                className={cn(
+                                    "p-2 rounded-full",
+                                    todayStatus.status === "completed" &&
+                                        "bg-green-500/10",
+                                    todayStatus.status === "in_progress" &&
+                                        "bg-blue-500/10",
+                                    todayStatus.status === "pending" &&
+                                        "bg-muted",
+                                )}
+                            >
+                                <CheckCircle
+                                    className={cn(
+                                        "h-5 w-5",
+                                        todayStatus.status === "completed" &&
+                                            "text-green-500",
+                                        todayStatus.status === "in_progress" &&
+                                            "text-blue-500",
+                                        todayStatus.status === "pending" &&
+                                            "text-muted-foreground",
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Estado de hoy
+                                </p>
+                                <p className="text-2xl font-bold">
+                                    {todayStatus.status === "completed" &&
+                                        "Completado"}
+                                    {todayStatus.status === "in_progress" &&
+                                        `${todayStatus.count} en curso`}
+                                    {todayStatus.status === "pending" &&
+                                        `${todayStatus.count} pendiente${todayStatus.count !== 1 ? "s" : ""}`}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Contenedor principal */}
@@ -499,6 +763,172 @@ export default function Calendario() {
                         )}
                     </div>
                 </div>
+
+                {/* Tareas sin fecha de vencimiento */}
+                {tasksWithoutDueDate.length > 0 && (
+                    <div className="bg-card rounded-lg border border-border p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                <Calendar className="h-5 w-5 text-muted-foreground" />
+                                Tareas sin fecha de vencimiento
+                                <span className="text-sm font-normal text-muted-foreground">
+                                    ({filteredTasksWithoutDueDate.length}/
+                                    {tasksWithoutDueDate.length})
+                                </span>
+                            </h2>
+                        </div>
+
+                        {/* Filtros */}
+                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                            {/* Búsqueda */}
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Buscar por título o descripción..."
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    className="pl-9"
+                                />
+                            </div>
+
+                            {/* Filtro de prioridad */}
+                            <Select
+                                value={priorityFilter}
+                                onValueChange={setPriorityFilter}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Prioridad" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Todas las prioridades
+                                    </SelectItem>
+                                    <SelectItem value="low">Baja</SelectItem>
+                                    <SelectItem value="medium">
+                                        Media
+                                    </SelectItem>
+                                    <SelectItem value="high">Alta</SelectItem>
+                                    <SelectItem value="urgent">
+                                        Urgente
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Filtro de estado */}
+                            <Select
+                                value={statusFilter}
+                                onValueChange={setStatusFilter}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Estado" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Todos los estados
+                                    </SelectItem>
+                                    <SelectItem value="pending">
+                                        Pendiente
+                                    </SelectItem>
+                                    <SelectItem value="in_progress">
+                                        En progreso
+                                    </SelectItem>
+                                    <SelectItem value="completed">
+                                        Completada
+                                    </SelectItem>
+                                    <SelectItem value="cancelled">
+                                        Cancelada
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Lista de tareas filtradas */}
+                        {filteredTasksWithoutDueDate.length === 0 ? (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>
+                                    No se encontraron tareas con los filtros
+                                    aplicados
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {filteredTasksWithoutDueDate.map((task) => (
+                                    <button
+                                        key={task.id}
+                                        onClick={() => handleTaskClick(task)}
+                                        className="text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                                    >
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <h4 className="font-medium text-sm truncate flex-1">
+                                                {task.title}
+                                            </h4>
+                                            <div
+                                                className={cn(
+                                                    "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                                                    priorityColors[
+                                                        task.priority
+                                                    ],
+                                                )}
+                                            />
+                                        </div>
+                                        {task.description && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                                {task.description}
+                                            </p>
+                                        )}
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span
+                                                className={cn(
+                                                    "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                                    task.priority === "low" &&
+                                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                                    task.priority ===
+                                                        "medium" &&
+                                                        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+                                                    task.priority === "high" &&
+                                                        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+                                                    task.priority ===
+                                                        "urgent" &&
+                                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                                                )}
+                                            >
+                                                {priorityLabels[task.priority]}
+                                            </span>
+                                            {task.status !== "pending" && (
+                                                <span
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                                        task.status ===
+                                                            "completed" &&
+                                                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                                                        task.status ===
+                                                            "in_progress" &&
+                                                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                                                        task.status ===
+                                                            "cancelled" &&
+                                                            "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+                                                    )}
+                                                >
+                                                    {task.status ===
+                                                        "completed" &&
+                                                        "Completada"}
+                                                    {task.status ===
+                                                        "in_progress" &&
+                                                        "En progreso"}
+                                                    {task.status ===
+                                                        "cancelled" &&
+                                                        "Cancelada"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Dialog de detalles de tarea */}
