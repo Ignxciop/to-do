@@ -103,7 +103,7 @@ export default function Register() {
                     <h2 className="text-2xl font-bold mb-6 text-center">
                         Verifica tu Email
                     </h2>
-                    <p className="mb-4 text-center text-sm text-gray-600">
+                    <p className="mb-4 text-center text-sm text-muted-foreground">
                         Hemos enviado un código de verificación a{" "}
                         <strong>{registeredEmail}</strong>
                     </p>
@@ -123,7 +123,7 @@ export default function Register() {
                                 required
                                 className="mt-1 text-center text-2xl tracking-widest"
                             />
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 El código expira en 5 minutos
                             </p>
                         </div>
@@ -149,7 +149,7 @@ export default function Register() {
                         <button
                             type="button"
                             onClick={handleResend}
-                            className="text-sm text-blue-600 hover:underline"
+                            className="text-sm text-primary hover:underline"
                             disabled={loading}
                         >
                             ¿No recibiste el código? Reenviar
@@ -159,7 +159,7 @@ export default function Register() {
                         <button
                             type="button"
                             onClick={() => setShowVerification(false)}
-                            className="text-sm text-gray-600 hover:underline"
+                            className="text-sm text-muted-foreground hover:underline"
                         >
                             Volver al registro
                         </button>
@@ -261,7 +261,7 @@ export default function Register() {
                     ¿Ya tienes cuenta?{" "}
                     <Link
                         to="/auth/login"
-                        className="text-blue-600 hover:underline"
+                        className="text-primary hover:underline"
                     >
                         Inicia sesión
                     </Link>

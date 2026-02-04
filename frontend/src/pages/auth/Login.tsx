@@ -69,7 +69,7 @@ export default function Login() {
                     ¿No tienes cuenta?{" "}
                     <Link
                         to="/auth/register"
-                        className="text-blue-600 hover:underline"
+                        className="text-primary hover:underline"
                     >
                         Regístrate
                     </Link>

@@ -10,6 +10,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function CatchAllRoute() {
     const { user } = useAuth();
@@ -23,25 +24,27 @@ function CatchAllRoute() {
 
 function App() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/tasks" element={<Tasks />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route
-                        path="/auth/login"
-                        element={<Navigate to="/login" replace />}
-                    />
-                    <Route path="/auth/register" element={<Register />} />
-                    <Route
-                        path="/register"
-                        element={<Navigate to="/auth/register" replace />}
-                    />
-                    <Route path="*" element={<CatchAllRoute />} />
-                </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+        <ThemeProvider>
+            <AuthProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/tasks" element={<Tasks />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route
+                            path="/auth/login"
+                            element={<Navigate to="/login" replace />}
+                        />
+                        <Route path="/auth/register" element={<Register />} />
+                        <Route
+                            path="/register"
+                            element={<Navigate to="/auth/register" replace />}
+                        />
+                        <Route path="*" element={<CatchAllRoute />} />
+                    </Routes>
+                </BrowserRouter>
+            </AuthProvider>
+        </ThemeProvider>
     );
 }
 

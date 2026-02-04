@@ -9,7 +9,7 @@ import {
     SidebarMenuItem,
     SidebarMenuButton,
 } from "../components/ui/sidebar";
-import { User2, Home, ListTodo, Target } from "lucide-react";
+import { User2, Home, ListTodo, Target, Moon, Sun } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -18,11 +18,13 @@ import {
 } from "../components/ui/dropdown-menu";
 import { Separator } from "../components/ui/separator";
 import { AuthContext } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const auth = useContext(AuthContext);
     const user = auth?.user;
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
     const handleLogout = async () => {
         if (auth) {
             await auth.logout();
@@ -179,6 +181,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         <DropdownMenuItem className="gap-2" disabled>
                             <User2 className="w-4 h-4" />
                             Cuenta
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="gap-2"
+                            onClick={toggleTheme}
+                        >
+                            {theme === "light" ? (
+                                <>
+                                    <Moon className="w-4 h-4" />
+                                    Modo oscuro
+                                </>
+                            ) : (
+                                <>
+                                    <Sun className="w-4 h-4" />
+                                    Modo claro
+                                </>
+                            )}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="gap-2" disabled>
                             <svg
