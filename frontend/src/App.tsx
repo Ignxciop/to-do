@@ -8,6 +8,7 @@ import {
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
+import Tasks from "./pages/Tasks";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 function CatchAllRoute() {
@@ -26,6 +27,7 @@ function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/tasks" element={<Tasks />} />
                     <Route path="/login" element={<Login />} />
                     <Route
                         path="/auth/login"
