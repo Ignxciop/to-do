@@ -210,70 +210,67 @@ function DraggableTask({ task, onClick }: DraggableTaskProps) {
             style={style}
             {...attributes}
             {...listeners}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
             className={cn(
-                "w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-move",
-                isDragging && "opacity-50",
+                "w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors select-none touch-none",
+                isDragging && "opacity-50 cursor-grabbing",
+                !isDragging && "cursor-grab",
             )}
         >
-            <div
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClick();
-                }}
-                className="cursor-pointer"
-            >
-                <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">
-                            {task.title}
-                        </h4>
-                        {task.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                {task.description}
-                            </p>
-                        )}
-                    </div>
-                    <div
-                        className={cn(
-                            "w-2 h-2 rounded-full flex-shrink-0 mt-1",
-                            priorityColors[task.priority],
-                        )}
-                    />
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm truncate">
+                        {task.title}
+                    </h4>
+                    {task.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {task.description}
+                        </p>
+                    )}
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div
+                    className={cn(
+                        "w-2 h-2 rounded-full flex-shrink-0 mt-1",
+                        priorityColors[task.priority],
+                    )}
+                />
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+                <span
+                    className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                        task.priority === "low" &&
+                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                        task.priority === "medium" &&
+                            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+                        task.priority === "high" &&
+                            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+                        task.priority === "urgent" &&
+                            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                    )}
+                >
+                    {priorityLabels[task.priority]}
+                </span>
+                {task.status !== "pending" && (
                     <span
                         className={cn(
                             "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                            task.priority === "low" &&
+                            task.status === "completed" &&
+                                "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                            task.status === "in_progress" &&
                                 "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                            task.priority === "medium" &&
-                                "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-                            task.priority === "high" &&
-                                "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-                            task.priority === "urgent" &&
-                                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                            task.status === "cancelled" &&
+                                "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
                         )}
                     >
-                        {priorityLabels[task.priority]}
+                        {task.status === "completed" && "Completada"}
+                        {task.status === "in_progress" && "En progreso"}
+                        {task.status === "cancelled" && "Cancelada"}
                     </span>
-                    {task.status !== "pending" && (
-                        <span
-                            className={cn(
-                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                task.status === "completed" &&
-                                    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-                                task.status === "in_progress" &&
-                                    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                                task.status === "cancelled" &&
-                                    "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
-                            )}
-                        >
-                            {task.status === "completed" && "Completada"}
-                            {task.status === "in_progress" && "En progreso"}
-                            {task.status === "cancelled" && "Cancelada"}
-                        </span>
-                    )}
-                </div>
+                )}
             </div>
         </div>
     );

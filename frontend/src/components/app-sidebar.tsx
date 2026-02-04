@@ -95,7 +95,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                             className="w-full transition-colors"
                         >
                             <a
-                                href="/calendario"
+                                href="/calendar"
                                 className="flex items-center py-3 text-lg font-bold"
                             >
                                 <Calendar className="size-4 mr-2" />
