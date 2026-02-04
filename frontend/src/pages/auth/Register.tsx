@@ -25,6 +25,8 @@ export default function Register() {
     const { register, verifyEmail, resendVerification, loading } = useAuth();
     const navigate = useNavigate();
 
+    console.log("Register render - showVerification:", showVerification);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -62,7 +64,19 @@ export default function Register() {
             );
         } catch (err: any) {
             console.error("Error al registrar:", err);
-            setError(err.message || "Error al registrarse");
+            // Si el error es por cuenta existente no verificada, mostrar pantalla de verificación
+            if (
+                err.message.includes("en proceso de verificación") ||
+                err.message.includes("verifica tu correo")
+            ) {
+                setRegisteredEmail(form.email);
+                setShowVerification(true);
+                setError(
+                    "Esta cuenta ya existe pero no ha sido verificada. Ingresa el código que recibiste por correo o solicita uno nuevo.",
+                );
+            } else {
+                setError(err.message || "Error al registrarse");
+            }
         }
     };
 
